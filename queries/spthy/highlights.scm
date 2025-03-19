@@ -81,6 +81,14 @@
 ((ident) @public.constant
   (#match? @public.constant "^'[^']*'$"))
 
+;; Testing potentially problematic patterns with OR operator
+((ident) @variable.message
+  (#not-match? @variable.message ":pub$|:fresh$|:temporal$|:msg$"))
+
+;; Testing quantifier patterns that might cause stack issues
+((ident) @variable.message
+  (#match? @variable.message "^[a-z][a-zA-Z0-9_]*'*$"))
+
 ;; Constants and numbers
 (natural) @number
 (param) @string
