@@ -61,11 +61,14 @@ vim.schedule(function()
   end, 1000)
 end)
 
--- Use our new tamarin module instead of the old setup
-vim.api.nvim_create_autocmd("FileType", {
-  pattern = "tamarin",
+-- Initialize Tamarin TreeSitter integration on startup
+vim.api.nvim_create_autocmd("VimEnter", {
   callback = function()
-    require("tamarin").setup()
+    local tamarin_ok, tamarin = pcall(require, "tamarin")
+    if tamarin_ok then
+      tamarin.cleanup() -- Clean up any previous setup
+      tamarin.setup()
+    end
   end,
   once = true,
 })
