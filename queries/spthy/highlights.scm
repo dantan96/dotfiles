@@ -1,5 +1,6 @@
 ;; Enhanced Tamarin Syntax Highlighting
 ;; Using validated node types detected through syntax tree analysis
+;; Implementing many of the highlighting groups defined in tamarin-highlights.lua
 
 ;; Keywords - using direct token identification
 [
@@ -20,20 +21,24 @@
 ((ident) @function.rule
  (#has-parent? @function.rule simple_rule))
 
-;; Variable identifiers
-((ident) @variable
- (#has-parent? @variable msg_var_or_nullary_fun))
+;; Variable identifiers in terms
+((ident) @variable.message
+ (#has-parent? @variable.message msg_var_or_nullary_fun))
 
-;; Function identifiers for In/Out
+;; Function identifiers for built-in facts
 ((ident) @function.builtin
  (#has-parent? @function.builtin linear_fact)
  (#any-of? @function.builtin "In" "Out" "Fr" "K"))
 
-;; Facts
+;; Function identifiers for crypto operations
+((ident) @function.builtin
+ (#any-of? @function.builtin "senc" "sdec" "mac" "kdf" "pk" "h"))
+
+;; Facts - with different styles
 (action_fact) @fact.action
 (linear_fact) @fact.linear
 
-;; Rule structure
+;; Rule structure elements
 (premise) @premise
 (conclusion) @conclusion
 (simple_rule) @rule.simple
@@ -45,6 +50,16 @@
 
 ;; Trace elements
 (trace_quantifier) @keyword.quantifier
+
+;; Message components and terms
+;; When parent node is exp_term, mul_term, etc.
+((ident) @variable.message
+ (#has-ancestor? @variable.message mset_term))
+
+;; When ident is inside argument of a linear_fact
+((ident) @variable.message
+ (#has-ancestor? @variable.message arguments)
+ (#has-ancestor? @variable.message linear_fact))
 
 ;; Error nodes for debugging
 (ERROR) @error 
