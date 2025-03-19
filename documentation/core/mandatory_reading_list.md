@@ -11,31 +11,31 @@ This document tracks the reading progress of TreeSitter documentation files. No 
 | documentation/treesitter/7 Playground.md | [x] | [ ] |
 | documentation/treesitter/Advanced Parsing.md | [x] | [ ] |
 | documentation/treesitter/Basic Parsing.md | [x] | [ ] |
-| documentation/treesitter/Build Documentation.md | [ ] | [ ] |
-| documentation/treesitter/Code Navigation.md | [ ] | [ ] |
+| documentation/treesitter/Build Documentation.md | [x] | [ ] |
+| documentation/treesitter/Code Navigation.md | [x] | [ ] |
 | documentation/treesitter/Complete Documentation.md | [ ] | [ ] |
 | documentation/treesitter/Contributing Guide.md | [ ] | [ ] |
 | documentation/treesitter/External Scanners.md | [x] | [ ] |
 | documentation/treesitter/Fuzz Documentation.md | [ ] | [ ] |
 | documentation/treesitter/Generate CLI Documentation.md | [ ] | [ ] |
 | documentation/treesitter/Getting Started (1).md | [ ] | [ ] |
-| documentation/treesitter/Getting Started.md | [ ] | [ ] |
+| documentation/treesitter/Getting Started.md | [x] | [ ] |
 | documentation/treesitter/Grammar DSL.md | [x] | [ ] |
 | documentation/treesitter/Highlight Documentation.md | [x] | [ ] |
 | documentation/treesitter/Init Config.md | [ ] | [ ] |
 | documentation/treesitter/Parse Documentation.md | [ ] | [ ] |
 | documentation/treesitter/Predicates and Directives.md | [x] | [ ] |
 | documentation/treesitter/Query Documentation.md | [x] | [ ] |
-| documentation/treesitter/Static Node Types.md | [ ] | [ ] |
+| documentation/treesitter/Static Node Types.md | [x] | [ ] |
 | documentation/treesitter/Syntax Highlighting.md | [x] | [ ] |
 | documentation/treesitter/Tree Sitter CLI Version.md | [ ] | [ ] |
 | documentation/treesitter/Tree Sitter Init Documentation.md | [ ] | [ ] |
-| documentation/treesitter/Tree Sitter Playground.md | [ ] | [ ] |
+| documentation/treesitter/Tree Sitter Playground.md | [x] | [ ] |
 | documentation/treesitter/Tree Sitter Summary.md | [x] | [ ] |
 | documentation/treesitter/Tree Sitter Tags.md | [ ] | [ ] |
 | documentation/treesitter/Tree Sitter Test.md | [ ] | [ ] |
-| documentation/treesitter/Using Parsers Syntax.md | [ ] | [ ] |
-| documentation/treesitter/Walking Trees.md | [ ] | [ ] |
+| documentation/treesitter/Using Parsers Syntax.md | [x] | [ ] |
+| documentation/treesitter/Walking Trees.md | [x] | [ ] |
 | documentation/treesitter/Writing Tests.md | [ ] | [ ] |
 | documentation/treesitter/Writing the Grammar.md | [x] | [ ] |
 | documentation/treesitter/highly_relevant_information_for_our_final_attempt.md | [x] | [ ] |
@@ -51,9 +51,9 @@ This document tracks the reading progress of TreeSitter documentation files. No 
 | test/treesitter_regex_test_plan.md | [x] | [ ] |
 
 ## Reading Progress
-- Files partially read: 25/46
+- Files partially read: 32/46
 - Files completely read: 0/46
-- Progress: 54%
+- Progress: 70%
 
 ## Notes
 - Files will be marked as "partially read" when they've been skimmed for key information
@@ -200,3 +200,45 @@ This document tracks the reading progress of TreeSitter documentation files. No 
 - Identifies five main issues: parser symbol mismatch, language-to-filetype mapping, regex stack overflow, directory structure confusion, and redundant code
 - Outlines a five-step implementation plan with detailed code examples
 - Includes testing and verification procedures to ensure the solution works correctly
+
+### Walking Trees (Walking Trees.md)
+- Details how to traverse the syntax tree using tree cursors for maximum efficiency
+- Explains methods to move the cursor around the tree, such as going to the first child, next sibling, or parent
+- Provides information on retrieving current nodes and field names
+- Important for systematically analyzing the structure of parsed code
+
+### Static Node Types (Static Node Types.md)
+- Explains the node-types.json file that provides structured data about syntax nodes
+- Describes how node types have basic info (type and named status), internal nodes with children, and supertype nodes
+- Important for understanding field relationships and type hierarchies
+- Useful for generating type declarations in statically-typed languages
+
+### Code Navigation (Code Navigation.md)
+- Shows how TreeSitter can be used for code navigation systems
+- Explains the tagging process to identify named entities in code
+- Describes a standard vocabulary for kinds and roles (e.g., definition.class, reference.call)
+- Includes information on unit testing tag queries
+
+### Build Documentation (Build Documentation.md)
+- Covers how to compile a parser into a dynamically-loadable library
+- Explains shared object and WASM module compilation options
+- Details environment variables and compiler options
+- Includes information about debug flags and allocator reuse
+
+### Getting Started (Getting Started.md)
+- Covers the process of building the TreeSitter library
+- Introduces the four main object types: languages, parsers, syntax trees, and syntax nodes
+- Provides a complete example program using the JSON parser
+- Includes compilation instructions for both static and dynamic linking
+
+### Using Parsers Syntax (Using Parsers Syntax.md)
+- Explains the syntax for writing TreeSitter queries to match nodes in a syntax tree
+- Covers fields, negated fields, and anonymous nodes
+- Describes special nodes like wildcards, ERROR nodes, and MISSING nodes
+- Important for writing correct query patterns that can identify specific syntax constructs
+
+### Tree Sitter Playground (Tree Sitter Playground.md)
+- Describes how to use the playground command to test a parser interactively
+- Requires building the parser as a WASM module
+- Includes options for quiet operation and specifying grammar paths
+- Essential for visually inspecting and debugging parse trees and query matches
