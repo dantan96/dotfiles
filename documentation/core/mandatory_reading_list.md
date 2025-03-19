@@ -47,13 +47,13 @@ This document tracks the reading progress of TreeSitter documentation files. No 
 | test/h14_external_scanner_test.md | [x] | [ ] |
 | test/h15_predicate_regex_test.md | [x] | [ ] |
 | test/h16_highlighter_gc_test.md | [x] | [ ] |
-| test/treesitter_fix_plan.md | [ ] | [ ] |
+| test/treesitter_fix_plan.md | [x] | [ ] |
 | test/treesitter_regex_test_plan.md | [x] | [ ] |
 
 ## Reading Progress
-- Files partially read: 24/46
+- Files partially read: 25/46
 - Files completely read: 0/46
-- Progress: 52%
+- Progress: 54%
 
 ## Notes
 - Files will be marked as "partially read" when they've been skimmed for key information
@@ -194,3 +194,9 @@ This document tracks the reading progress of TreeSitter documentation files. No 
 - Addresses specific hypotheses about regex complexity and stack overflow issues
 - Proposes tests for nested quantifiers, case-insensitive matching, and other patterns
 - Aims to develop guidelines for writing regex patterns that avoid stack overflow
+
+### TreeSitter Fix Plan (treesitter_fix_plan.md)
+- Provides a comprehensive plan to fix Tamarin TreeSitter syntax highlighting
+- Identifies five main issues: parser symbol mismatch, language-to-filetype mapping, regex stack overflow, directory structure confusion, and redundant code
+- Outlines a five-step implementation plan with detailed code examples
+- Includes testing and verification procedures to ensure the solution works correctly
