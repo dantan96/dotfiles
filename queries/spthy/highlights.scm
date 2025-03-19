@@ -60,6 +60,11 @@
 (msg_var_or_nullary_fun) @variable.message
 (nat_var) @variable.number
 
+;; Adding back one regex pattern for testing
+;; Message variables with apostrophes
+((ident) @variable.message
+  (#match? @variable.message "^[a-z][a-zA-Z0-9_]*'$"))
+
 ;; Constants and numbers
 (natural) @number
 (param) @string
