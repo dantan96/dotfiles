@@ -35,3 +35,83 @@
 - This issue was related to term precedence, not to query or highlighting issues
 - The official TreeSitter query file format uses node names for capture and assigns highlight groups
 - Standard Neovim TreeSitter queries for languages like Lua and Vim follow a consistent pattern 
+
+# Established Facts About TreeSitter Parser Integration
+
+This document records facts that we've established with high confidence during our investigation of TreeSitter issues with Tamarin syntax highlighting.
+
+## TreeSitter Parser Loading Process
+
+1. **Parser Search Path**: Neovim searches for parser libraries in directories named `parser/` within the runtime path.
+
+2. **File Naming Convention**: Parser files should be named as `parser/{language}.so` (on Unix-like systems) or `parser/{language}.dll` (on Windows).
+
+3. **Symbol Loading**: Neovim attempts to dynamically load a symbol named `tree_sitter_{language}` from the parser library.
+
+4. **Language-to-Filetype Mapping**: TreeSitter uses a mapping between language names (used for parsers) and filetypes (used by Neovim).
+
+5. **Query File Location**: After loading a parser, Neovim looks for query files (like `highlights.scm`) in `queries/{language}/` directories.
+
+## Symbol Name Issues
+
+1. **Symbol Name Format**: TreeSitter parsers must export a function named `tree_sitter_{language}()` that returns a `TSLanguage*` pointer.
+
+2. **macOS Symbol Prefixing**: On macOS, the C compiler adds a leading underscore to exported symbols, turning `tree_sitter_language` into `_tree_sitter_language`.
+
+3. **Symbol Name Mismatch**: Our Tamarin parser exports `_tree_sitter_spthy` instead of `tree_sitter_tamarin`, causing loading failures.
+
+4. **Language Name Mismatch**: The parser is using 'spthy' as the language name but the filetype is 'tamarin', causing confusion.
+
+## TreeSitter API Facts
+
+1. **Language Registration API**: Neovim 0.9+ provides `vim.treesitter.language.register(source_lang, target_filetype)` for mapping languages to filetypes.
+
+2. **Parser Addition API**: Neovim's `vim.treesitter.language.add(lang, opts)` function can load a parser from a specific path.
+
+3. **Query File Requirements**: A minimal working TreeSitter setup requires at least a `highlights.scm` file for syntax highlighting.
+
+4. **API Compatibility**: Some TreeSitter APIs are only available in specific Neovim versions:
+   - `vim.treesitter.language.register()`: Neovim 0.9+
+   - `vim.treesitter.language.add()`: Neovim 0.8+
+
+## Regex and Query Issues
+
+1. **Regex Engine Limitations**: Neovim's NFA-based regex engine has stack limitations that can cause errors with complex patterns.
+
+2. **Stack Overflow Triggers**: Complex regex patterns with certain combinations of features (recursion, backreferences, nested quantifiers) can trigger stack overflows.
+
+3. **Error Message**: The error `couldn't parse regex: Vim:E874: (NFA) Could not pop the stack!` indicates a regex pattern that exceeds the engine's capabilities.
+
+4. **Regex in Queries**: TreeSitter query files (like `highlights.scm`) can contain regex patterns that are evaluated by Neovim's regex engine.
+
+## Tamarin Parser Specifics
+
+1. **Parser File Location**: We have confirmed parsers at `/Users/dan/.config/nvim/parser/spthy/spthy.so` and `/Users/dan/.config/nvim/parser/tamarin/tamarin.so`.
+
+2. **Exported Symbols**: Both parser files export the symbol `_tree_sitter_spthy` but not `tree_sitter_tamarin` or `tree_sitter_spthy`.
+
+3. **Query File Symlinks**: There are symbolic links between `queries/tamarin/highlights.scm` and `queries/spthy/highlights.scm`.
+
+4. **Architecture Compatibility**: The parser files are compiled for x86_64 architecture, which matches the system architecture.
+
+## Effective Solutions
+
+1. **Direct Language Registration**: Using `vim.treesitter.language.register('spthy', 'tamarin')` directly maps the language to the filetype.
+
+2. **Symbolic Links**: Creating symlinks between parser files can work around naming mismatches.
+
+3. **Symbol Inspection**: Inspecting parser symbols with `nm -gU parser/language/language.so | grep tree_sitter` helps diagnose symbol issues.
+
+4. **Robust Parser Loading**: A custom parser loader that handles symbol discrepancies is the most comprehensive solution.
+
+5. **Progressive Testing**: Testing highlights.scm files with progressively increasing complexity helps isolate problematic patterns.
+
+## Neovim TreeSitter Integration
+
+1. **Plugin Relationship**: The official `nvim-treesitter` plugin extends Neovim's built-in TreeSitter support but isn't required for basic functionality.
+
+2. **Health Check**: Running `:checkhealth nvim-treesitter` and `:checkhealth treesitter` provides diagnostic information about the TreeSitter setup.
+
+3. **Parser Installation**: The `:TSInstall` command from `nvim-treesitter` can install parsers, but custom parsers need manual installation.
+
+4. **Parser Updates**: The `:TSUpdate` command can update parsers to versions compatible with the installed `nvim-treesitter` plugin. 
