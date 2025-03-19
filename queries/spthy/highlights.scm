@@ -12,22 +12,21 @@
 ] @keyword
 
 ;; Identifiers - using the ident node type with text predicates for differentiation
-;; Theory names
-((theory
-   (ident) @type))
+;; Theory name
+((ident) @type
+ (#has-parent? @type theory))
 
-;; Rule identifiers - without using invalid field name
-((simple_rule
-   (rule)
-   (ident) @function.rule))
+;; Rule identifiers - using parent and position checking
+((ident) @function.rule
+ (#has-parent? @function.rule simple_rule))
 
 ;; Variable identifiers
-((msg_var_or_nullary_fun
-   (ident) @variable))
+((ident) @variable
+ (#has-parent? @variable msg_var_or_nullary_fun))
 
 ;; Function identifiers for In/Out
-((linear_fact
-   (ident) @function.builtin)
+((ident) @function.builtin
+ (#has-parent? @function.builtin linear_fact)
  (#any-of? @function.builtin "In" "Out" "Fr" "K"))
 
 ;; Facts
