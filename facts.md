@@ -52,6 +52,8 @@ This document records facts that we've established with high confidence during o
 
 5. **Query File Location**: After loading a parser, Neovim looks for query files (like `highlights.scm`) in `queries/{language}/` directories.
 
+6. **Parsing Process**: After loading the parser and query files, TreeSitter parses the buffer to create a syntax tree that is used for syntax highlighting and other features.
+
 ## Symbol Name Issues
 
 1. **Symbol Name Format**: TreeSitter parsers must export a function named `tree_sitter_{language}()` that returns a `TSLanguage*` pointer.
@@ -61,6 +63,8 @@ This document records facts that we've established with high confidence during o
 3. **Symbol Name Mismatch**: Our Tamarin parser exports `_tree_sitter_spthy` instead of `tree_sitter_tamarin`, causing loading failures.
 
 4. **Language Name Mismatch**: The parser is using 'spthy' as the language name but the filetype is 'tamarin', causing confusion.
+
+5. **Verified Solution**: We've verified that direct language registration with `vim.treesitter.language.register('spthy', 'tamarin')` successfully resolves the language/filetype mismatch.
 
 ## TreeSitter API Facts
 
@@ -73,6 +77,8 @@ This document records facts that we've established with high confidence during o
 4. **API Compatibility**: Some TreeSitter APIs are only available in specific Neovim versions:
    - `vim.treesitter.language.register()`: Neovim 0.9+
    - `vim.treesitter.language.add()`: Neovim 0.8+
+
+5. **Nested Functionality**: Even after registering a language with `vim.treesitter.language.register()`, you still need to add the parser with `vim.treesitter.language.add()` for it to work properly.
 
 ## Regex and Query Issues
 
@@ -94,6 +100,10 @@ This document records facts that we've established with high confidence during o
 
 4. **Architecture Compatibility**: The parser files are compiled for x86_64 architecture, which matches the system architecture.
 
+5. **Parser Loading Success**: We've confirmed that our updated code successfully loads the parser and registers the language, as verified by our test scripts.
+
+6. **Parser Parsing Error**: While the parser loads successfully, our tests show it returns an ERROR node as the root when parsing Tamarin files, suggesting grammar issues.
+
 ## Effective Solutions
 
 1. **Direct Language Registration**: Using `vim.treesitter.language.register('spthy', 'tamarin')` directly maps the language to the filetype.
@@ -106,6 +116,8 @@ This document records facts that we've established with high confidence during o
 
 5. **Progressive Testing**: Testing highlights.scm files with progressively increasing complexity helps isolate problematic patterns.
 
+6. **Minimal Query Files**: Starting with ultra-minimal query files and gradually adding complexity helps identify problematic patterns.
+
 ## Neovim TreeSitter Integration
 
 1. **Plugin Relationship**: The official `nvim-treesitter` plugin extends Neovim's built-in TreeSitter support but isn't required for basic functionality.
@@ -114,4 +126,18 @@ This document records facts that we've established with high confidence during o
 
 3. **Parser Installation**: The `:TSInstall` command from `nvim-treesitter` can install parsers, but custom parsers need manual installation.
 
-4. **Parser Updates**: The `:TSUpdate` command can update parsers to versions compatible with the installed `nvim-treesitter` plugin. 
+4. **Parser Updates**: The `:TSUpdate` command can update parsers to versions compatible with the installed `nvim-treesitter` plugin.
+
+5. **Fallback Mechanism**: When TreeSitter highlighting fails, it's common to implement a fallback to traditional syntax highlighting.
+
+## Testing and Debugging
+
+1. **Headless Testing**: Using `nvim --headless` with custom Lua scripts is an effective way to test TreeSitter functionality without UI interaction.
+
+2. **Logging Strategy**: Comprehensive logging at each step of the parser loading and initialization process helps diagnose issues.
+
+3. **Symbol Examination**: The `nm` command with appropriate flags (e.g., `-gU` on macOS/Unix) is essential for diagnosing symbol name issues.
+
+4. **Test File Simplification**: Testing with progressively simpler files helps isolate syntax constructs that cause parsing problems.
+
+5. **Error Suppression**: Many TreeSitter-related errors can be suppressed in production code to avoid user-facing error messages. 

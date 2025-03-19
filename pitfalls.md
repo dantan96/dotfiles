@@ -36,9 +36,17 @@ This document outlines common pitfalls and false leads that can occur when troub
 
 **Solution**: Implement custom parser loading logic for languages not supported by nvim-treesitter.
 
+### Pitfall 5: Only Registering Language Without Adding Parser
+
+**Description**: Only calling `vim.treesitter.language.register()` without also adding the parser.
+
+**Reality**: Even after registering a language-to-filetype mapping, you still need to add the parser explicitly with `vim.treesitter.language.add()` for it to work properly.
+
+**Solution**: Always follow language registration with parser addition, even if they use the same language name.
+
 ## Query File Issues
 
-### Pitfall 5: Complex Regex Patterns
+### Pitfall 6: Complex Regex Patterns
 
 **Description**: Writing overly complex regex patterns in highlight queries.
 
@@ -46,7 +54,7 @@ This document outlines common pitfalls and false leads that can occur when troub
 
 **Solution**: Split complex patterns into multiple simpler ones, and avoid using advanced regex features when possible.
 
-### Pitfall 6: Ignoring Query Syntax Errors
+### Pitfall 7: Ignoring Query Syntax Errors
 
 **Description**: Not checking for syntax errors in query files.
 
@@ -54,7 +62,7 @@ This document outlines common pitfalls and false leads that can occur when troub
 
 **Solution**: Validate query files incrementally, starting with minimal queries and gradually adding complexity.
 
-### Pitfall 7: Query File Location Confusion
+### Pitfall 8: Query File Location Confusion
 
 **Description**: Confusion about where query files should be placed.
 
@@ -62,9 +70,17 @@ This document outlines common pitfalls and false leads that can occur when troub
 
 **Solution**: Ensure query files are in the correct location, or use symlinks to support multiple names.
 
+### Pitfall 9: Assuming Query File Changes Are Applied Immediately
+
+**Description**: Assuming that changes to query files are applied immediately to open buffers.
+
+**Reality**: Changes to query files often require buffer reloading or explicit reloading of TreeSitter highlighting.
+
+**Solution**: Use commands like `:edit` or `:TSBufEnable highlight` to apply query changes to existing buffers.
+
 ## Debugging Pitfalls
 
-### Pitfall 8: Insufficient Logging
+### Pitfall 10: Insufficient Logging
 
 **Description**: Not adding enough logging to diagnose complex issues.
 
@@ -72,7 +88,7 @@ This document outlines common pitfalls and false leads that can occur when troub
 
 **Solution**: Implement comprehensive logging that tracks parser loading, language registration, and query parsing.
 
-### Pitfall 9: Testing Too Much at Once
+### Pitfall 11: Testing Too Much at Once
 
 **Description**: Trying to fix all issues at once instead of isolating components.
 
@@ -80,7 +96,7 @@ This document outlines common pitfalls and false leads that can occur when troub
 
 **Solution**: Test components in isolation - parser loading, language registration, and query parsing - before combining them.
 
-### Pitfall 10: Overlooking Version Differences
+### Pitfall 12: Overlooking Version Differences
 
 **Description**: Not accounting for differences between Neovim versions.
 
@@ -88,9 +104,17 @@ This document outlines common pitfalls and false leads that can occur when troub
 
 **Solution**: Check Neovim version and implement version-specific workarounds as needed.
 
+### Pitfall 13: Confusing Parser Loading with Parsing Success
+
+**Description**: Assuming that successful parser loading means successful parsing.
+
+**Reality**: A parser can load successfully but still fail to parse the buffer correctly due to grammar issues.
+
+**Solution**: After verifying parser loading, check the parser's output by inspecting the syntax tree (e.g., checking the root node type).
+
 ## Query Language Pitfalls
 
-### Pitfall 11: Undefined Node Types
+### Pitfall 14: Undefined Node Types
 
 **Description**: Using node types in queries that don't exist in the grammar.
 
@@ -98,7 +122,7 @@ This document outlines common pitfalls and false leads that can occur when troub
 
 **Solution**: Inspect the actual node types produced by the parser using tools like nvim-treesitter-playground and use only valid node types in queries.
 
-### Pitfall 12: Regex Pattern Compatibility
+### Pitfall 15: Regex Pattern Compatibility
 
 **Description**: Using regex syntax that's valid in other environments but not in Neovim.
 
@@ -106,7 +130,7 @@ This document outlines common pitfalls and false leads that can occur when troub
 
 **Solution**: Test regex patterns in Neovim directly using commands like `:echo match("test", "pattern")` before using them in queries.
 
-### Pitfall 13: Overusing Predicates
+### Pitfall 16: Overusing Predicates
 
 **Description**: Using too many predicates in TreeSitter queries, which can slow down highlighting.
 
@@ -116,7 +140,7 @@ This document outlines common pitfalls and false leads that can occur when troub
 
 ## Environment-Specific Pitfalls
 
-### Pitfall 14: Architecture Mismatches
+### Pitfall 17: Architecture Mismatches
 
 **Description**: Using parsers compiled for the wrong architecture.
 
@@ -124,7 +148,7 @@ This document outlines common pitfalls and false leads that can occur when troub
 
 **Solution**: Ensure parsers are compiled for the correct architecture, or provide architecture-specific versions.
 
-### Pitfall 15: File Permission Issues
+### Pitfall 18: File Permission Issues
 
 **Description**: Overlooking file permission issues with parser binaries.
 
@@ -132,7 +156,7 @@ This document outlines common pitfalls and false leads that can occur when troub
 
 **Solution**: Check and fix permissions with `chmod +x parser/{language}.so` if needed.
 
-### Pitfall 16: Assuming Cross-Platform Compatibility
+### Pitfall 19: Assuming Cross-Platform Compatibility
 
 **Description**: Assuming that parsers will work identically across different operating systems.
 
@@ -142,7 +166,7 @@ This document outlines common pitfalls and false leads that can occur when troub
 
 ## Tree-sitter Grammar Pitfalls
 
-### Pitfall 17: Grammar-Query Mismatches
+### Pitfall 20: Grammar-Query Mismatches
 
 **Description**: Not updating queries when the grammar changes.
 
@@ -150,10 +174,44 @@ This document outlines common pitfalls and false leads that can occur when troub
 
 **Solution**: Keep queries in sync with grammar changes, and test thoroughly after grammar updates.
 
-### Pitfall 18: Missing External Scanner
+### Pitfall 21: Missing External Scanner
 
 **Description**: Forgetting to compile and include the external scanner when required.
 
 **Reality**: Some TreeSitter grammars use external scanners for complex tokenization logic. Without the scanner, the parser might not work correctly.
 
-**Solution**: Check if the grammar has an external scanner and ensure it's properly compiled and included. 
+**Solution**: Check if the grammar has an external scanner and ensure it's properly compiled and included.
+
+### Pitfall 22: Incorrect Node Type Expectations
+
+**Description**: Expecting specific node types that don't match what the grammar actually produces.
+
+**Reality**: The grammar defines what node types are produced, and these might not match your expectations or documentation.
+
+**Solution**: Use tools like nvim-treesitter-playground to inspect the actual node types and structure produced by the parser.
+
+## Testing and Verification Pitfalls
+
+### Pitfall 23: Inadequate Test Files
+
+**Description**: Using test files that don't exercise all language features.
+
+**Reality**: Some issues only appear with specific language constructs or combinations of features.
+
+**Solution**: Create comprehensive test files that cover all language features, especially edge cases.
+
+### Pitfall 24: Manual Testing Only
+
+**Description**: Relying solely on manual testing without automated tests.
+
+**Reality**: Manual testing is error-prone and difficult to reproduce consistently.
+
+**Solution**: Create automated tests using Lua scripts with `nvim --headless` that can be run consistently.
+
+### Pitfall 25: Ignoring Error Nodes
+
+**Description**: Ignoring ERROR nodes in the syntax tree.
+
+**Reality**: ERROR nodes indicate parsing problems that can affect highlighting and other features.
+
+**Solution**: Check for ERROR nodes in the syntax tree and investigate their causes. 

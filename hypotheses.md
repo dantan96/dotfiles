@@ -176,7 +176,7 @@ Each hypothesis is categorized as:
 
 ### Hypothesis PL1: Parser Binary Symbol Name Mismatch
 
-**Status**: SUPPORTED
+**Status**: RESOLVED
 
 **Description**: The compiled TreeSitter parser for Tamarin exports symbols with names that don't match what Neovim expects (e.g., `_tree_sitter_spthy` instead of `tree_sitter_tamarin`).
 
@@ -190,14 +190,14 @@ Each hypothesis is categorized as:
 - Implemented `register_language_directly` function to map the parsers correctly
 - Added more comprehensive symbol inspection to the parser loader
 
-**Resolution Plan**:
-- Use direct language registration when available: `vim.treesitter.language.register('spthy', 'tamarin')`
-- Create symlinks to allow TreeSitter to find parsers with the expected name
-- Update parser loader to handle symbol name discrepancies
+**Resolution**:
+- Implemented direct language registration with `vim.treesitter.language.register('spthy', 'tamarin')`
+- Added symlink creation for platforms/versions where direct registration is not available
+- Our updated module now successfully loads the parser, as confirmed by our test scripts
 
 ### Hypothesis PL2: Parser File Path Issues
 
-**Status**: PARTIALLY SUPPORTED
+**Status**: RESOLVED
 
 **Description**: The TreeSitter parser files are not in locations where Neovim can find them or are incorrect.
 
@@ -209,27 +209,27 @@ Each hypothesis is categorized as:
 - Used `vim.api.nvim_get_runtime_file` to check what parser files Neovim can find
 - Implemented a more robust parser loader that checks multiple locations
 
-**Resolution Plan**:
-- Ensure consistent parser locations and naming
-- Use symlinks to maintain backward compatibility
+**Resolution**:
+- Our parser loader now checks for parsers in multiple locations and creates appropriate symlinks
+- Testing confirms it successfully finds and loads the parser
 
 ### Hypothesis PL3: Missing Parser Registration
 
-**Status**: SUPPORTED
+**Status**: RESOLVED
 
 **Description**: The parser is not being properly registered with Neovim's TreeSitter subsystem.
 
 **Evidence**:
-- Debug logs show that language registration is failing
+- Debug logs show that language registration was failing
 - Parser files exist but Neovim doesn't recognize them for the tamarin filetype
 
 **Actions**:
 - Created a custom parser loader that explicitly registers languages
 - Added logging to track the registration process
 
-**Resolution Plan**:
-- Implement robust parser registration in `init.lua` using our custom loader
-- Verify registration with diagnostic commands
+**Resolution**:
+- Our updated module uses direct language registration via `vim.treesitter.language.register`
+- Testing with `/tmp/test-tamarin/test_script.lua` confirms registration succeeds
 
 ## Query File Issues
 
@@ -253,10 +253,9 @@ Each hypothesis is categorized as:
   - 05_or_operators: Added complex OR operations
 - Developed test script to methodically test each variant
 
-**Resolution Plan**:
-- Systematically identify which regex patterns cause the problem
-- Simplify complex patterns into multiple simpler ones
-- Avoid problematic combinations of regex features
+**Next Steps**:
+- Continue testing simplified regex patterns to identify exactly which constructs cause issues
+- Develop a highlights.scm that avoids problematic patterns
 
 ### Hypothesis QF2: Apostrophes in Variable Names Causing Regex Issues
 
@@ -272,7 +271,7 @@ Each hypothesis is categorized as:
 - Created test cases with various apostrophe usage patterns
 - Tested simplified regex patterns for apostrophe handling
 
-**Resolution Plan**:
+**Next Steps**:
 - Isolate the specific regex pattern causing issues
 - Split complex apostrophe-handling patterns into multiple simpler patterns
 
@@ -280,45 +279,46 @@ Each hypothesis is categorized as:
 
 ### Hypothesis TI1: Version Incompatibilities
 
-**Status**: ACTIVE
+**Status**: PARTIALLY SUPPORTED
 
 **Description**: There might be incompatibilities between Neovim's TreeSitter integration, the TreeSitter library version, and the parser version.
 
 **Evidence**:
 - Similar errors have been reported with other TreeSitter parsers in different Neovim versions
 - Web searches reveal similar symbol mismatch issues with other languages
+- Our testing shows that the approach needed varies by Neovim version
 
 **Actions**:
 - Researched known TreeSitter issues with symbol naming
 - Created a robust parser loader that handles different Neovim versions
 
-**Resolution Plan**:
-- Ensure the solution works across multiple Neovim versions
+**Next Steps**:
+- Test on multiple Neovim versions to ensure cross-version compatibility
 - Document version-specific requirements
 
 ### Hypothesis TI2: Parser Compilation Issues
 
-**Status**: PARTIALLY SUPPORTED
+**Status**: RESOLVED
 
 **Description**: The TreeSitter parser was compiled with options that make it incompatible with Neovim's expectations.
 
 **Evidence**:
 - Symbol names have unexpected prefixes (`_tree_sitter_spthy` instead of `tree_sitter_tamarin`)
-- Parser works on some systems but not others
+- The leading underscore in symbol names is a common macOS compiler behavior
 
 **Actions**:
 - Examined symbol table of compiled parsers
 - Added more detailed symbol inspection to the parser loader
 
-**Resolution Plan**:
-- Implement workarounds for symbol name mismatches
-- Consider recompiling parsers with appropriate options if necessary
+**Resolution**:
+- Our approach now handles the symbol naming differences, creating symlinks when needed
+- We also directly register the language with the correct mapping between language and filetype
 
 ## Query Parsing Issues
 
 ### Hypothesis QP1: Mix of Filetype and Language Issues
 
-**Status**: SUPPORTED
+**Status**: RESOLVED
 
 **Description**: Confusion between the 'tamarin' filetype and the 'spthy' language for TreeSitter is causing query loading issues.
 
@@ -330,18 +330,42 @@ Each hypothesis is categorized as:
 - Made both query locations contain valid query files
 - Implemented proper language-to-filetype mappings
 
-**Resolution Plan**:
-- Ensure consistent naming between parser, filetype, and queries
-- Use language registration to properly map between them
+**Resolution**:
+- Our implementation now properly handles the relationship between the 'spthy' language and 'tamarin' filetype
+- The parser is properly registered for the tamarin filetype
+
+## Parsing Issues
+
+### Hypothesis PI1: Grammar Cannot Parse Tamarin Files
+
+**Status**: NEW
+
+**Description**: The Tamarin TreeSitter grammar may have issues parsing Tamarin protocol files correctly.
+
+**Evidence**:
+- Our tests show that while the parser loads successfully, it returns an ERROR node as the root
+- This suggests the grammar itself might not be correctly parsing Tamarin syntax
+
+**Actions**:
+- Confirmed the parser is loading properly
+- Verified that the ERROR node is coming from parsing, not from loading
+
+**Next Steps**:
+- Examine the grammar definition
+- Check for any mismatches between the grammar and actual Tamarin syntax
+- Test with progressively simpler Tamarin files to isolate syntax that causes parsing errors
 
 ## Summary of Latest Findings
 
-The most significant recent finding is the symbol name mismatch issue. The parser binary exports `_tree_sitter_spthy` instead of the expected `tree_sitter_tamarin`, which is what Neovim is looking for when loading the parser. This issue is compounded by inconsistencies between filetype ('tamarin') and language name ('spthy'). 
+Our latest findings confirm that we've successfully resolved the parser loading and registration issues. The parser is now properly registered for the tamarin filetype and is being loaded correctly. However, the parser may still have issues correctly parsing Tamarin files, as evidenced by the ERROR root node.
 
 We've implemented several solutions:
-1. Created a robust parser loader that inspects symbol names
-2. Added direct language registration when available
-3. Created symlinks to handle name mismatches
-4. Implemented systematic testing of highlight queries
+1. Direct language registration via `vim.treesitter.language.register('spthy', 'tamarin')`
+2. Symlink creation to handle symbol name mismatches
+3. Robust error handling throughout the parser loading process
+4. Better logging for diagnosing issues
 
-We're continuing to investigate the regex-related issues in the highlights.scm file with a systematic testing approach. The current hypothesis is that certain combinations of regex features (especially with apostrophes, quantifiers, and OR operators) are triggering the NFA stack overflow. 
+Our next focus should be on:
+1. Understanding why the parser returns ERROR nodes for Tamarin files
+2. Identifying and fixing problematic regex patterns in the highlights.scm file
+3. Testing with a variety of Tamarin files to ensure robustness 
