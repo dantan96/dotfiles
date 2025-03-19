@@ -9,6 +9,24 @@ TEST_FILE="$SCRIPT_DIR/apostrophe_test.spthy"
 # Clean up any previous test data
 rm -f "$SCRIPT_DIR/test_results.txt"
 
+# Create a temporary file for query validation
+QUERY_FILE="/tmp/query_validation.lua"
+cat > "$QUERY_FILE" << 'EOF'
+-- Query validation script
+local query_path = vim.fn.stdpath('config') .. '/queries/spthy/highlights.scm'
+local query_content = vim.fn.readfile(query_path)
+local query_str = table.concat(query_content, '\n')
+
+-- Try to parse the query
+local ok, result = pcall(vim.treesitter.query.parse, 'spthy', query_str)
+
+return {
+  query_path = query_path,
+  query_valid = ok,
+  error = not ok and result or nil
+}
+EOF
+
 # Run Neovim in headless mode to test the Tamarin TreeSitter integration
 nvim --headless -u NORC \
   -c "set rtp+=$(cd ~/.config/nvim && pwd)" \
@@ -16,7 +34,7 @@ nvim --headless -u NORC \
   -c "lua vim.opt.runtimepath:append('$(cd ~/.config/nvim && pwd)')" \
   -c "lua require('tamarin').setup()" \
   -c "e $TEST_FILE" \
-  -c "lua local h = require('tamarin.highlighter'); local d = require('tamarin.diagnostics'); local success = h.ensure_highlighting(0); local diagnostics = d.run_diagnosis(); vim.fn.writefile({success and 'Highlighting setup: SUCCESS' or 'Highlighting setup: FAILED', string.format('Parser found: %s', diagnostics.parser_found and 'YES' or 'NO'), string.format('Query file valid: %s', diagnostics.query_valid and 'YES' or 'NO'), string.format('Apostrophe handling: %s', diagnostics.apostrophe_handling and 'WORKING' or 'BROKEN')}, '$SCRIPT_DIR/test_results.txt')" \
+  -c "lua local h = require('tamarin.highlighter'); local d = require('tamarin.diagnostics'); local success = h.ensure_highlighting(0); local diagnostics = d.run_diagnosis(); local q = dofile('$QUERY_FILE'); vim.fn.writefile({success and 'Highlighting setup: SUCCESS' or 'Highlighting setup: FAILED', string.format('Parser found: %s', diagnostics.parser_found and 'YES' or 'NO'), string.format('Query file valid: %s', q.query_valid and 'YES' or 'NO'), string.format('Query error: %s', q.error or 'NONE'), string.format('Apostrophe handling: %s', diagnostics.apostrophe_handling and 'WORKING' or 'BROKEN')}, '$SCRIPT_DIR/test_results.txt')" \
   -c "qa!"
 
 # Display test results
@@ -27,4 +45,7 @@ if [ -f "$SCRIPT_DIR/test_results.txt" ]; then
 else
   echo "Test failed: No results file generated"
   exit 1
-fi 
+fi
+
+# Clean up
+rm -f "$QUERY_FILE" 
