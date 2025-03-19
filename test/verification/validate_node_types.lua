@@ -50,17 +50,29 @@ local function extract_node_types(file_path)
         pcall(vim.treesitter.language.register, 'spthy', 'tamarin')
     end
     
-    -- Parse the buffer
+    -- Parse the buffer with a pcall to handle errors
     local success, parser = pcall(vim.treesitter.get_parser, bufnr, "spthy")
     
     if not success or not parser then
         print("Error creating parser: " .. tostring(parser))
+        vim.api.nvim_buf_delete(bufnr, { force = true })
         return {}
     end
     
-    -- Get the syntax tree
-    local tree = parser:parse()[1]
+    -- Get the syntax tree with pcall to handle errors
+    local tree_success, tree = pcall(function() return parser:parse()[1] end)
+    if not tree_success or not tree then
+        print("Error parsing tree: " .. tostring(tree))
+        vim.api.nvim_buf_delete(bufnr, { force = true })
+        return {}
+    end
+    
     local root = tree:root()
+    if not root then
+        print("Error: Root node is nil")
+        vim.api.nvim_buf_delete(bufnr, { force = true })
+        return {}
+    end
     
     -- Set to collect all node types
     local node_types = {}
@@ -76,8 +88,11 @@ local function extract_node_types(file_path)
         end
     end
     
-    -- Start visiting from the root
-    visit_node(root)
+    -- Start visiting from the root with pcall to handle errors
+    local visit_success, err = pcall(function() visit_node(root) end)
+    if not visit_success then
+        print("Error visiting nodes: " .. tostring(err))
+    end
     
     -- Clean up the buffer
     vim.api.nvim_buf_delete(bufnr, { force = true })
@@ -169,25 +184,54 @@ end
 
 -- Main function to run the validation
 function M.run_validation()
+    -- Set a vim timeout to ensure we don't hang
+    vim.defer_fn(function()
+        print("Validation timed out after 3 seconds, forcing exit")
+        vim.cmd('qa!')
+    end, 3000)  -- 3 second timeout
+
     print("Starting node type validation for Tamarin/Spthy...")
     
     -- Register the language mapping (this is crucial for the parser to work)
     if vim.treesitter.language and vim.treesitter.language.register then
-        pcall(vim.treesitter.language.register, 'spthy', 'tamarin')
+        local reg_success = pcall(vim.treesitter.language.register, 'spthy', 'tamarin')
+        if not reg_success then
+            print("Failed to register language mapping")
+        end
     end
     
     -- Set log file path
     local log_file = vim.fn.stdpath("cache") .. "/tamarin_node_types.log"
     
-    -- Validate the highlights.scm file
+    -- Validate the highlights.scm file with pcall to handle errors
     local query_file = vim.fn.stdpath("config") .. "/queries/spthy/highlights.scm"
-    local success = M.validate_highlights_scm(query_file, log_file)
+    local success, result = pcall(M.validate_highlights_scm, query_file, log_file)
     
-    if success then
+    if not success then
+        print("Error during validation: " .. tostring(result))
+        -- Write to log file even if there was an error
+        local f = io.open(log_file, "w")
+        if f then
+            f:write("# Tamarin TreeSitter Node Type Validation\n\n")
+            f:write("## ❌ Error During Validation\n\n")
+            f:write("An error occurred during validation: " .. tostring(result) .. "\n")
+            f:close()
+        end
+        
+        -- Make sure to exit
+        vim.defer_fn(function() vim.cmd('qa!') end, 100)
+        return false
+    end
+    
+    if result then
         print("✅ All node types in highlights.scm are valid. See " .. log_file .. " for details.")
+        -- Make sure to exit
+        vim.defer_fn(function() vim.cmd('qa!') end, 100)
         return true
     else
         print("❌ Invalid node types found in highlights.scm. See " .. log_file .. " for details.")
+        -- Make sure to exit
+        vim.defer_fn(function() vim.cmd('qa!') end, 100)
         return false
     end
 end
