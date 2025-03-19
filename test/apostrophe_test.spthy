@@ -1,0 +1,28 @@
+theory ApostropheTest
+begin
+
+builtins: symmetric-encryption, hashing
+
+// Basic rules
+rule Simple:
+    [ ] --[ ]-> [ ]
+
+// Variables with apostrophes (previously problematic)
+rule Apostrophes:
+    let x' = 'foo'
+    let y' = 'bar'
+    in
+    [ In(x') ] --[ Processed(x', y') ]-> [ Out(y') ]
+
+// More complex patterns
+rule MultipleApostrophes:
+    let x'' = 'foo'
+    let y''' = 'bar'
+    in
+    [ In(x'') ] --[ Processed(x'', y''') ]-> [ Out(y''') ]
+
+// Lemma with quantifiers and variables with apostrophes
+lemma secrecy:
+    "∀ x' #i. Secret(x') @ i ⟹ ¬(∃ #j. K(x') @ j)"
+
+end 

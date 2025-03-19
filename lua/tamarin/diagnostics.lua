@@ -6,6 +6,27 @@ local M = {}
 -- Maximum number of diagnostic entries to print
 local MAX_DIAG_ENTRIES = 20
 
+-- Safe pretty print function (for compatibility with different Neovim versions)
+local function safe_pretty_print(t)
+  if vim.pretty_print then
+    return vim.pretty_print(t)
+  else
+    -- Simple fallback for older Neovim versions
+    if type(t) ~= "table" then
+      print(tostring(t))
+      return
+    end
+    
+    for k, v in pairs(t) do
+      if type(v) == "table" then
+        print(k .. ": table")
+      else
+        print(k .. ": " .. tostring(v))
+      end
+    end
+  end
+end
+
 -- Check if TreeSitter is available
 function M.check_treesitter_available()
   local result = {
@@ -16,7 +37,7 @@ function M.check_treesitter_available()
   }
   
   print("TreeSitter Availability:")
-  vim.pretty_print(result)
+  safe_pretty_print(result)
   
   return result
 end
@@ -41,7 +62,7 @@ function M.check_parser_status()
   end
   
   print("Parser Status:")
-  vim.pretty_print(result)
+  safe_pretty_print(result)
   
   return result
 end
@@ -62,7 +83,7 @@ function M.check_query_files()
   end
   
   print("Query Files:")
-  vim.pretty_print(result)
+  safe_pretty_print(result)
   
   return result
 end
@@ -82,7 +103,69 @@ function M.check_highlighting()
   end
   
   print("Highlighting Status:")
-  vim.pretty_print(result)
+  safe_pretty_print(result)
+  
+  return result
+end
+
+-- Check for apostrophe handling in variables
+function M.check_apostrophe_handling()
+  local result = {
+    apostrophe_handling = true
+  }
+  
+  -- This requires a parser and valid query
+  if not vim.treesitter or not vim.treesitter.query then
+    print("Cannot check apostrophe handling: TreeSitter not available")
+    result.apostrophe_handling = false
+    return result
+  end
+  
+  -- Check if we have a valid parser for the current buffer
+  local parser_ok, parser = pcall(vim.treesitter.get_parser, 0, 'spthy')
+  if not parser_ok or not parser then
+    print("Cannot check apostrophe handling: Parser not available")
+    result.apostrophe_handling = false
+    return result
+  end
+  
+  -- Check query file
+  local query_ok, query = pcall(vim.treesitter.query.get, 'spthy', 'highlights')
+  if not query_ok or not query then
+    print("Cannot check apostrophe handling: Query not available")
+    result.apostrophe_handling = false
+    return result
+  end
+  
+  -- Check for errors in highlighting
+  local errors = {}
+  local orig_error = vim.api.nvim_err_writeln
+  vim.api.nvim_err_writeln = function(msg)
+    table.insert(errors, msg)
+    orig_error(msg)
+  end
+  
+  -- Force highlighting to trigger potential errors
+  local highlighter_ok, highlighter = pcall(vim.treesitter.highlighter.new, parser)
+  if not highlighter_ok or not highlighter then
+    print("Failed to create highlighter")
+    result.apostrophe_handling = false
+  end
+  
+  -- Check for regex stack errors in the collected errors
+  for _, err in ipairs(errors) do
+    if err:match("regex") and err:match("stack") then
+      print("Detected regex stack error:", err)
+      result.apostrophe_handling = false
+    end
+  end
+  
+  -- Restore the original error function
+  vim.api.nvim_err_writeln = orig_error
+  
+  -- Display result
+  print("Apostrophe Handling:")
+  safe_pretty_print(result)
   
   return result
 end
@@ -108,16 +191,19 @@ function M.run_diagnosis()
   end
   
   -- Run diagnostics with limited output
-  M.check_treesitter_available()
+  local ts_diag = M.check_treesitter_available()
   print("----------------------------------------")
   
-  M.check_parser_status()
+  local parser_diag = M.check_parser_status()
   print("----------------------------------------")
   
-  M.check_query_files()
+  local query_diag = M.check_query_files()
   print("----------------------------------------")
   
-  M.check_highlighting()
+  local highlight_diag = M.check_highlighting()
+  print("----------------------------------------")
+  
+  local apostrophe_diag = M.check_apostrophe_handling()
   print("----------------------------------------")
   
   print("Diagnosis complete.")
@@ -125,7 +211,14 @@ function M.run_diagnosis()
   -- Restore original print function
   _G.print = original_print
   
-  return true
+  -- Return composite diagnostic result
+  return {
+    treesitter_available = ts_diag.treesitter,
+    parser_found = parser_diag.parser_loaded,
+    query_valid = query_diag.query_loaded,
+    highlighting_active = highlight_diag.ts_highlighting_active,
+    apostrophe_handling = apostrophe_diag.apostrophe_handling
+  }
 end
 
 -- Check exported symbols in parser files
