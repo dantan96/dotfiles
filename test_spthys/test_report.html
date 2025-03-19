@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset='utf-8'>
+<title>Tamarin Syntax Highlighting Test Results</title>
+<style>
+  body { font-family: system-ui, sans-serif; line-height: 1.5; max-width: 1200px; margin: 0 auto; padding: 20px; }
+  h1 { text-align: center; margin-bottom: 30px; }
+  .summary { background: #f4f4f4; padding: 15px; border-radius: 5px; margin-bottom: 30px; }
+  .pass { color: #2d862d; }
+  .fail { color: #e60000; }
+  .file-section { margin-bottom: 30px; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; }
+  .file-header { background: #eee; padding: 10px 15px; border-bottom: 1px solid #ddd; }
+  .file-content { padding: 15px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }
+  th { background-color: #f9f9f9; }
+  tr.failed { background-color: rgba(255, 0, 0, 0.05); }
+  .token { display: inline-block; padding: 2px 5px; border-radius: 3px; font-family: monospace; }
+  .expected { background-color: rgba(0, 128, 0, 0.2); }
+  .actual { background-color: rgba(255, 0, 0, 0.2); }
+</style>
+</head>
+<body>
+<h1>Tamarin Syntax Highlighting Manual Test Report</h1>
+<div class='summary'>
+<h2>Summary</h2>
+<p><b>Total Tests:</b> 15</p>
+<p><b>Passed:</b> <span class='pass'>2</span></p>
+<p><b>Failed:</b> <span class='fail'>13</span></p>
+</div>
+
+<div class='file-section'>
+<div class='file-header'>
+<h3>Test Results Analysis</h3>
+</div>
+<div class='file-content'>
+<h4>What's Working</h4>
+<ul>
+  <li>Basic keyword recognition for 'theory', 'begin', 'end', 'rule', etc.</li>
+  <li>Recognition of some identifiers</li>
+</ul>
+
+<h4>What's Not Working</h4>
+<ul>
+  <li>Macro name highlighting</li>
+  <li>Macro usage highlighting</li>
+  <li>Begin/end keyword highlighting - they're recognized as basic keywords but not specifically as begin/end</li>
+  <li>Preprocessor directive recognition</li>
+  <li>Special constant 'g' highlighting</li>
+  <li>Tactic keyword recognition</li>
+  <li>Fresh variable and apostrophe variable handling</li>
+  <li>Public variable handling</li>
+</ul>
+
+<h4>Diagnosis</h4>
+<p>The main challenges appear to be related to:</p>
+<ol>
+  <li>TreeSitter grammar limitations for Tamarin</li>
+  <li>Node type mismatches between what we're targeting in our queries and what TreeSitter actually produces</li>
+  <li>Context-specific captures that may require more specific conditions or node path traversals</li>
+</ol>
+
+<h4>Next Steps</h4>
+<ol>
+  <li>Examine the TreeSitter parser for Tamarin to understand exactly what node types are available</li>
+  <li>Start with a minimal working highlights.scm and add features one at a time, testing after each addition</li>
+  <li>Consider updating the TreeSitter grammar for Tamarin itself to better support the desired highlighting features</li>
+  <li>Use more specific pattern matching and context conditions in the TreeSitter queries</li>
+</ol>
+</div>
+</div>
+
+</body>
+</html>

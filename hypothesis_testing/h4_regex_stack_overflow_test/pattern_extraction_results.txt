@@ -1,0 +1,144 @@
+Extracting Regex Patterns from Query Files
+=========================================
+
+Extracting from: highlights.scm.minimal
+Found 0 patterns:
+
+Extracting from: highlights.scm.05_or_operators
+Found 15 patterns:
+1: ^(senc|sdec|mac|kdf|pk|h)$
+2: ^(macro|macros)$
+3: ^[A-Z][A-Z0-9_]*$
+4: ^(direct|sorry|induction)$
+5: ^(Fr|In|Out|K)$
+6: ^[A-Z][A-Z0-9_]*$
+7: ^\\$[a-zA-Z][a-zA-Z0-9_]*'?$
+8: ^~[a-zA-Z][a-zA-Z0-9_]*'?$
+9: ^#[a-zA-Z][a-zA-Z0-9_]*'?$
+10: ^[a-z][a-zA-Z0-9_]*'?$
+11: ^[a-zA-Z][a-zA-Z0-9_]*:pub$
+12: ^[a-zA-Z][a-zA-Z0-9_]*:fresh$
+13: ^[a-zA-Z][a-zA-Z0-9_]*:temporal$
+14: ^[a-zA-Z][a-zA-Z0-9_]*:msg$
+15: ^'[^']*'$
+
+Extracting from: highlights.scm.02_simple_regex
+Found 18 patterns:
+1: ^senc$
+2: ^sdec$
+3: ^mac$
+4: ^kdf$
+5: ^pk$
+6: ^h$
+7: ^[A-Z][A-Z0-9_]*$
+8: ^direct$
+9: ^sorry$
+10: ^induction$
+11: ^Fr$
+12: ^In$
+13: ^Out$
+14: ^K$
+15: ^\\$[a-zA-Z][a-zA-Z0-9_]*$
+16: ^~[a-zA-Z][a-zA-Z0-9_]*$
+17: ^#[a-zA-Z][a-zA-Z0-9_]*$
+18: ^[a-z][a-zA-Z0-9_]*$
+
+Extracting from: highlights.scm.01_basic
+Found 0 patterns:
+
+Extracting from: highlights.scm
+Found 0 patterns:
+
+Extracting from: highlights.scm.03_apostrophes
+Found 27 patterns:
+1: ^senc$
+2: ^sdec$
+3: ^mac$
+4: ^kdf$
+5: ^pk$
+6: ^h$
+7: ^[A-Z][A-Z0-9_]*$
+8: ^direct$
+9: ^sorry$
+10: ^induction$
+11: ^Fr$
+12: ^In$
+13: ^Out$
+14: ^K$
+15: ^\\$[a-zA-Z][a-zA-Z0-9_]*$
+16: ^~[a-zA-Z][a-zA-Z0-9_]*$
+17: ^#[a-zA-Z][a-zA-Z0-9_]*$
+18: ^[a-z][a-zA-Z0-9_]*$
+19: ^\\$[a-zA-Z][a-zA-Z0-9_]*'$
+20: ^~[a-zA-Z][a-zA-Z0-9_]*'$
+21: ^#[a-zA-Z][a-zA-Z0-9_]*'$
+22: ^[a-z][a-zA-Z0-9_]*'$
+23: ^[a-zA-Z][a-zA-Z0-9_]*:pub$
+24: ^[a-zA-Z][a-zA-Z0-9_]*:fresh$
+25: ^[a-zA-Z][a-zA-Z0-9_]*:temporal$
+26: ^[a-zA-Z][a-zA-Z0-9_]*:msg$
+27: ^'[^']*'$
+
+Extracting from: highlights.scm.04_quantifiers
+Found 13 patterns:
+1: ^(senc|sdec|mac|kdf|pk|h)$
+2: ^[A-Z][A-Z0-9_]*$
+3: ^(direct|sorry|induction)$
+4: ^(Fr|In|Out|K)$
+5: ^\\$[a-zA-Z][a-zA-Z0-9_]*'?$
+6: ^~[a-zA-Z][a-zA-Z0-9_]*'?$
+7: ^#[a-zA-Z][a-zA-Z0-9_]*'?$
+8: ^[a-z][a-zA-Z0-9_]*'?$
+9: ^[a-zA-Z][a-zA-Z0-9_]*:pub$
+10: ^[a-zA-Z][a-zA-Z0-9_]*:fresh$
+11: ^[a-zA-Z][a-zA-Z0-9_]*:temporal$
+12: ^[a-zA-Z][a-zA-Z0-9_]*:msg$
+13: ^'[^']*'$
+
+
+Pattern Complexity Analysis
+==========================
+
+Analysis of or_operators (highlights.scm.05_or_operators):
+  Total patterns: 15
+  With apostrophes: 5
+  With OR operators: 4
+  With complex quantifiers: 0
+
+Analysis of minimal (highlights.scm.minimal):
+  Total patterns: 0
+  With apostrophes: 0
+  With OR operators: 0
+  With complex quantifiers: 0
+
+Analysis of simple_regex (highlights.scm.02_simple_regex):
+  Total patterns: 18
+  With apostrophes: 0
+  With OR operators: 0
+  With complex quantifiers: 0
+
+Analysis of apostrophes (highlights.scm.03_apostrophes):
+  Total patterns: 27
+  With apostrophes: 5
+  With OR operators: 0
+  With complex quantifiers: 0
+
+Analysis of basic (highlights.scm.01_basic):
+  Total patterns: 0
+  With apostrophes: 0
+  With OR operators: 0
+  With complex quantifiers: 0
+
+Analysis of current (highlights.scm):
+  Total patterns: 0
+  With apostrophes: 0
+  With OR operators: 0
+  With complex quantifiers: 0
+
+Analysis of quantifiers (highlights.scm.04_quantifiers):
+  Total patterns: 13
+  With apostrophes: 5
+  With OR operators: 3
+  With complex quantifiers: 0
+
+Analysis complete

@@ -1,0 +1,4 @@
+/* Test variables with apostrophes */
+let
+  ~t' = MAC(k, m)
+in

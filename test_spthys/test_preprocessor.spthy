@@ -1,0 +1,4 @@
+/* Test preprocessor directives */
+#ifdef PREPROCESSING
+/* Preprocessor directives should be highlighted */
+#endif
