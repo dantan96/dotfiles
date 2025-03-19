@@ -31,3 +31,14 @@
   - Confirmed that the language/filetype mismatch requires explicit mapping
   - Updated hypothesis_database.md with findings
 
+- Backed up redundant files to create a cleaner structure:
+  - Backed up parser/tamarin/tamarin.so to backup/parser/
+  - Backed up parser/tamarin/tamarin-grammar.js to backup/parser/
+  - Backed up all query files to backup/queries/spthy/ and backup/queries/tamarin/
+
+- Created simplified modules based on the approach in simplifying_the_config.md:
+  - lua/tamarin/simplified_loader.lua: Simplified parser loader
+  - lua/tamarin/diagnostics.lua: Diagnostic utilities for troubleshooting
+  - lua/tamarin/simplified.lua: New main module using the simplified approach
+  - These modules provide the same functionality with cleaner, more maintainable code
+
