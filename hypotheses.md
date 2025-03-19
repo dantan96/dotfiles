@@ -160,3 +160,188 @@ couldn't parse regex: Vim:E874: (NFA) Could not pop the stack!
 2. Test with a progressive series of highlights.scm files to identify problematic patterns
 3. Check Neovim documentation for proper parser and language registration procedures
 4. Examine TreeSitter initialization in init.lua to ensure proper loading sequence 
+
+# Hypotheses Tracker for Tamarin TreeSitter Issues
+
+This document tracks our hypotheses about what might be causing the TreeSitter issues with Tamarin syntax highlighting, especially the error: `couldn't parse regex: Vim:E874: (NFA) Could not pop the stack!`.
+
+Each hypothesis is categorized as:
+- **ACTIVE**: Currently being investigated
+- **SUPPORTED**: Evidence supports this hypothesis
+- **PARTIALLY SUPPORTED**: Some evidence supports this hypothesis
+- **REFUTED**: Evidence contradicts this hypothesis
+- **RESOLVED**: Issue has been resolved
+
+## Parser Loading Issues
+
+### Hypothesis PL1: Parser Binary Symbol Name Mismatch
+
+**Status**: SUPPORTED
+
+**Description**: The compiled TreeSitter parser for Tamarin exports symbols with names that don't match what Neovim expects (e.g., `_tree_sitter_spthy` instead of `tree_sitter_tamarin`).
+
+**Evidence**:
+- Running `nm -gU parser/tamarin/tamarin.so | grep tree_sitter` shows symbol `_tree_sitter_spthy` but no `tree_sitter_tamarin`
+- Error log shows: `Failed to load parser: uv_dlsym: dlsym(0x457d1130, tree_sitter_tamarin): symbol not found`
+- When we investigate the logs, we see Neovim is looking for `tree_sitter_tamarin` but the library exports `_tree_sitter_spthy`
+
+**Actions**:
+- Created symlinks between parser files to handle naming inconsistencies
+- Implemented `register_language_directly` function to map the parsers correctly
+- Added more comprehensive symbol inspection to the parser loader
+
+**Resolution Plan**:
+- Use direct language registration when available: `vim.treesitter.language.register('spthy', 'tamarin')`
+- Create symlinks to allow TreeSitter to find parsers with the expected name
+- Update parser loader to handle symbol name discrepancies
+
+### Hypothesis PL2: Parser File Path Issues
+
+**Status**: PARTIALLY SUPPORTED
+
+**Description**: The TreeSitter parser files are not in locations where Neovim can find them or are incorrect.
+
+**Evidence**:
+- Found multiple parser files in different locations: `/Users/dan/.config/nvim/parser/spthy/spthy.so` and `/Users/dan/.config/nvim/parser/tamarin/tamarin.so`
+- Neovim might be finding one parser but not the other
+
+**Actions**:
+- Used `vim.api.nvim_get_runtime_file` to check what parser files Neovim can find
+- Implemented a more robust parser loader that checks multiple locations
+
+**Resolution Plan**:
+- Ensure consistent parser locations and naming
+- Use symlinks to maintain backward compatibility
+
+### Hypothesis PL3: Missing Parser Registration
+
+**Status**: SUPPORTED
+
+**Description**: The parser is not being properly registered with Neovim's TreeSitter subsystem.
+
+**Evidence**:
+- Debug logs show that language registration is failing
+- Parser files exist but Neovim doesn't recognize them for the tamarin filetype
+
+**Actions**:
+- Created a custom parser loader that explicitly registers languages
+- Added logging to track the registration process
+
+**Resolution Plan**:
+- Implement robust parser registration in `init.lua` using our custom loader
+- Verify registration with diagnostic commands
+
+## Query File Issues
+
+### Hypothesis QF1: Complex Regex Patterns in Highlights.scm
+
+**Status**: ACTIVE
+
+**Description**: The highlights.scm file contains regex patterns that are too complex for Neovim's NFA-based regex engine.
+
+**Evidence**:
+- Error message explicitly mentions regex: `couldn't parse regex: Vim:E874: (NFA) Could not pop the stack!`
+- An ultra-minimal highlights.scm without regex patterns eliminates the error
+- Progressive testing with more complex patterns might identify problematic ones
+
+**Actions**:
+- Created a series of highlights.scm files with increasing complexity:
+  - 01_basic: Just node captures, no regex
+  - 02_simple_regex: Simple regex patterns without apostrophes
+  - 03_apostrophes: Added apostrophe support without quantifiers
+  - 04_quantifiers: Added quantifiers but no OR operators
+  - 05_or_operators: Added complex OR operations
+- Developed test script to methodically test each variant
+
+**Resolution Plan**:
+- Systematically identify which regex patterns cause the problem
+- Simplify complex patterns into multiple simpler ones
+- Avoid problematic combinations of regex features
+
+### Hypothesis QF2: Apostrophes in Variable Names Causing Regex Issues
+
+**Status**: ACTIVE
+
+**Description**: Regex patterns matching variables with apostrophes (e.g., `~k'`) are causing the NFA stack overflow.
+
+**Evidence**:
+- The error occurs specifically with files containing apostrophes in variable names
+- Non-apostrophe variable highlighting seems to work correctly
+
+**Actions**:
+- Created test cases with various apostrophe usage patterns
+- Tested simplified regex patterns for apostrophe handling
+
+**Resolution Plan**:
+- Isolate the specific regex pattern causing issues
+- Split complex apostrophe-handling patterns into multiple simpler patterns
+
+## TreeSitter Integration Issues
+
+### Hypothesis TI1: Version Incompatibilities
+
+**Status**: ACTIVE
+
+**Description**: There might be incompatibilities between Neovim's TreeSitter integration, the TreeSitter library version, and the parser version.
+
+**Evidence**:
+- Similar errors have been reported with other TreeSitter parsers in different Neovim versions
+- Web searches reveal similar symbol mismatch issues with other languages
+
+**Actions**:
+- Researched known TreeSitter issues with symbol naming
+- Created a robust parser loader that handles different Neovim versions
+
+**Resolution Plan**:
+- Ensure the solution works across multiple Neovim versions
+- Document version-specific requirements
+
+### Hypothesis TI2: Parser Compilation Issues
+
+**Status**: PARTIALLY SUPPORTED
+
+**Description**: The TreeSitter parser was compiled with options that make it incompatible with Neovim's expectations.
+
+**Evidence**:
+- Symbol names have unexpected prefixes (`_tree_sitter_spthy` instead of `tree_sitter_tamarin`)
+- Parser works on some systems but not others
+
+**Actions**:
+- Examined symbol table of compiled parsers
+- Added more detailed symbol inspection to the parser loader
+
+**Resolution Plan**:
+- Implement workarounds for symbol name mismatches
+- Consider recompiling parsers with appropriate options if necessary
+
+## Query Parsing Issues
+
+### Hypothesis QP1: Mix of Filetype and Language Issues
+
+**Status**: SUPPORTED
+
+**Description**: Confusion between the 'tamarin' filetype and the 'spthy' language for TreeSitter is causing query loading issues.
+
+**Evidence**:
+- Symbolic links exist between `queries/tamarin/highlights.scm` and `queries/spthy/highlights.scm`
+- Parsing logs show queries being loaded for the wrong language
+
+**Actions**:
+- Made both query locations contain valid query files
+- Implemented proper language-to-filetype mappings
+
+**Resolution Plan**:
+- Ensure consistent naming between parser, filetype, and queries
+- Use language registration to properly map between them
+
+## Summary of Latest Findings
+
+The most significant recent finding is the symbol name mismatch issue. The parser binary exports `_tree_sitter_spthy` instead of the expected `tree_sitter_tamarin`, which is what Neovim is looking for when loading the parser. This issue is compounded by inconsistencies between filetype ('tamarin') and language name ('spthy'). 
+
+We've implemented several solutions:
+1. Created a robust parser loader that inspects symbol names
+2. Added direct language registration when available
+3. Created symlinks to handle name mismatches
+4. Implemented systematic testing of highlight queries
+
+We're continuing to investigate the regex-related issues in the highlights.scm file with a systematic testing approach. The current hypothesis is that certain combinations of regex features (especially with apostrophes, quantifiers, and OR operators) are triggering the NFA stack overflow. 
