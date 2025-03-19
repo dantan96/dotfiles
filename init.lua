@@ -33,7 +33,7 @@ vim.schedule(function()
       -- Override the require_language function to handle missing parsers
       local old_require_language = mod.require_language
       mod.require_language = function(lang, path)
-        if lang == "tamarin" then
+        if lang == "tamarin" or lang == "spthy" then
           -- Silently skip tamarin language if parser not found
           if not path or vim.fn.filereadable(path) == 0 then
             return false
@@ -53,34 +53,8 @@ vim.schedule(function()
   end, 1000)
 end)
 
--- Safely load the Tamarin parser to avoid startup errors
-local function setup_tamarin_parser()
-  -- Load tamarin-highlights without trying to load the parser yet
-  require("config.tamarin-highlights").setup()
-
-  -- Only try to load the parser when a Tamarin file is opened
-  vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
-    pattern = { "*.spthy", "*.sapic" },
-    callback = function()
-      local parser_path = vim.api.nvim_get_runtime_file("parser/spthy/spthy.so", false)[1]
-      if parser_path then
-        -- Suppress error messages during parser loading
-        local ok = pcall(function()
-          vim.treesitter.language.add('spthy', { path = parser_path })
-          vim.treesitter.language.register('spthy', 'tamarin')
-        end)
-
-        if ok then
-          pcall(vim.treesitter.start, 0, 'spthy')
-          vim.g.tamarin_treesitter_initialized = true
-        end
-      end
-    end
-  })
-end
-
--- Setup without errors
-pcall(setup_tamarin_parser)
+-- Use our new tamarin module instead of the old setup
+require("tamarin").setup()
 
 -- Restore normal notification after initialization
 vim.defer_fn(function()
