@@ -40,6 +40,48 @@ end
 
 log_debug("Starting error detection...")
 
+-- First ensure the parser is registered and loaded
+log_debug("Registering spthy language for tamarin filetype...")
+vim.treesitter.language.register('spthy', 'tamarin')
+
+-- Find the parser in standard locations
+local function find_parser()
+  local possible_paths = {
+    vim.fn.stdpath('config') .. '/parser/spthy/spthy.so',
+    vim.fn.stdpath('config') .. '/parser/tamarin/tamarin.so',
+    vim.fn.stdpath('data') .. '/site/pack/packer/start/nvim-treesitter/parser/spthy.so',
+    vim.fn.stdpath('data') .. '/site/pack/lazy/opt/nvim-treesitter/parser/spthy.so',
+    vim.fn.stdpath('data') .. '/lazy/nvim-treesitter/parser/spthy.so'
+  }
+  
+  -- Try to find a parser file
+  for _, path in ipairs(possible_paths) do
+    if vim.fn.filereadable(path) == 1 then
+      log_debug("Found parser at: " .. path)
+      return path
+    end
+  end
+  
+  log_debug("ERROR: No parser found in standard locations")
+  return nil
+end
+
+-- Load the parser explicitly
+local parser_path = find_parser()
+if parser_path then
+  if vim.treesitter.language.add then
+    local add_ok, add_err = pcall(vim.treesitter.language.add, 'spthy', { path = parser_path })
+    if add_ok then
+      log_debug("Successfully added spthy language from: " .. parser_path)
+    else
+      log_debug("ERROR adding language: " .. tostring(add_err))
+      print("ERROR: " .. tostring(add_err))
+    end
+  else
+    log_debug("vim.treesitter.language.add not available, trying alternative loading methods")
+  end
+end
+
 -- Try to load the highlights.scm file directly to check for errors
 local query_file = vim.fn.stdpath('config') .. '/queries/spthy/highlights.scm'
 log_debug("Loading query file: " .. query_file)
@@ -101,7 +143,6 @@ EOF
 
 # Run Neovim with our diagnostic script
 nvim --headless \
-     -c "lua vim.treesitter.language.register('spthy', 'tamarin')" \
      -c "edit ~/test_tamarin/test.spthy" \
      -c "set filetype=tamarin" \
      -c "luafile /tmp/capture_errors.lua" \
