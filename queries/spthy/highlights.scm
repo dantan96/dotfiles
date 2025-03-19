@@ -15,9 +15,9 @@
 ((theory
    (ident) @type))
 
-;; Rule identifiers
+;; Rule identifiers - without using invalid field name
 ((simple_rule
-   rule: (rule)
+   (rule)
    (ident) @function.rule))
 
 ;; Variable identifiers
