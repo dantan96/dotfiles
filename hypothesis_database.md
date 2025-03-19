@@ -143,3 +143,8 @@
    - **Evidence**: Testing various approaches to storing the TreeSitter highlighter in H18 test confirms type conversion issues with `E5101: Cannot convert given lua type`.
    - **Evidence**: Using a global registry approach to store the TreeSitter highlighter object avoids these type conversion issues.
    - **Evidence**: Our modified highlighter.lua implementation using this approach resolves the errors and maintains proper highlighting.
+
+19. **H19**: The TreeSitter syntax highlighting for Tamarin is failing because the `highlights.scm` query file contains references to node types that don't exist in the actual Tamarin/Spthy grammar.
+   - **Evidence**: Our test revealed a specific error: `Query error at 18:4. Invalid node type "protocol": "protocol" ^`.
+   - **Evidence**: This confirms that the query file is trying to highlight a node type called "protocol" that doesn't exist in the parser's grammar.
+   - **Evidence**: TreeSitter query files must reference valid node types from the grammar. If a node type mentioned in the query doesn't exist, TreeSitter will fail to parse the query.

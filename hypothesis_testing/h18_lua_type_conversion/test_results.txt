@@ -1,0 +1,6 @@
+Parser loaded: NO
+Highlighter created: NO
+Storage tests completed: YES
+Registry approach works: YES
+
+ERRORS:

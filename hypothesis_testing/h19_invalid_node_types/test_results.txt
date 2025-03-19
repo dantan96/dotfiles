@@ -1,0 +1,51 @@
+SUPPORTED NODE TYPES:
+Failed to get spthy language: attempt to call a nil value
+
+NODE TYPES IN QUERY:
+Query parsing: FAILED
+Error: Invalid node type: protocol
+
+Node types referenced in the query:
+- all
+- dyadic_op
+- function_typed
+- function_untyped
+- ident
+- lemma
+- linear_fact
+- monadic_op
+- multi_comment
+- natural
+- persistent_fact
+- rule
+- single_comment
+- string
+- theory
+
+Keywords in string literals:
+- all
+- and
+- axiom
+- begin
+- builtins
+- else
+- end
+- equations
+- exists
+- functions
+- if
+- in
+- lemma
+- let
+- not
+- or
+- property
+- protocol
+- restriction
+- rule
+- then
+- theory
+
+NOTE: Found 'protocol' as a string literal in the query file.
+This might be causing the error if used incorrectly.
+Line 17: "protocol"
