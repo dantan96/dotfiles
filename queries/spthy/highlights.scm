@@ -1,45 +1,51 @@
-;; Tamarin Syntax Highlighting - Valid Node Types Only
-;; This file contains only valid node types from the parser
+;; Enhanced Tamarin Syntax Highlighting
+;; Using validated node types detected through syntax tree analysis
 
-;; Keywords can be highlighted using the ident capture with any-of?
-((ident) @keyword
- (#any-of? @keyword
-  "theory" "begin" "end" "rule" "lemma"
-  "let" "in" "functions" "equations" "builtins"
-  "restriction" "axiom" "if" "then" "else"
-  "exists-trace"))
+;; Keywords - using direct token identification
+[
+  "theory"
+  "begin"
+  "end"
+  "rule"
+  "lemma"
+] @keyword
 
-;; Identifiers - directly capturing the ident node type
-(ident) @variable
+;; Identifiers - using the ident node type with text predicates for differentiation
+;; Theory names
+((theory
+   (ident) @type))
 
-;; Valid fact types
+;; Rule identifiers
+((simple_rule
+   rule: (rule)
+   (ident) @function.rule))
+
+;; Variable identifiers
+((msg_var_or_nullary_fun
+   (ident) @variable))
+
+;; Function identifiers for In/Out
+((linear_fact
+   (ident) @function.builtin)
+ (#any-of? @function.builtin "In" "Out" "Fr" "K"))
+
+;; Facts
 (action_fact) @fact.action
+(linear_fact) @fact.linear
 
-;; Rule components - directly matching the node types
+;; Rule structure
 (premise) @premise
 (conclusion) @conclusion
-
-;; Quantifiers
-(trace_quantifier) @keyword.quantifier
-
-;; Rule types
 (simple_rule) @rule.simple
 
-;; Pre-defined symbols
-(pre_defined) @constant
-
 ;; Special tokens
-[
-  "--["
-  "]->"
-  ":"
-] @operator
+["--[" "]->"] @operator
+[":" "(" ")"] @operator
+["[" "]"] @punctuation.delimiter
 
-[
-  "["
-  "]"
-  "\""
-] @punctuation.delimiter
+;; Trace elements
+(exists-trace) @keyword.quantifier
+(trace_quantifier) @keyword.quantifier
 
-;; Error nodes - useful for diagnostics
+;; Error nodes for debugging
 (ERROR) @error 
