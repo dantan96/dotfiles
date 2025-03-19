@@ -1,5 +1,5 @@
 ;; Enhanced Tamarin Syntax Highlighting
-;; Using node types and avoiding complex regex patterns
+;; Using validated node types and avoiding complex regex patterns
 ;; Utilizing Neovim-specific predicates for better performance
 
 ;; Keywords using the optimized any-of? predicate
@@ -9,8 +9,7 @@
   "let" "in" "functions" "equations" "builtins"
   "restriction" "axiom" "if" "then" "else"
   "section" "subsection" "text"
-  "modulo" "multiset" "node" "public" "exists"
-  "all" "Fr" "In" "Out" "Choose"))
+  "exists-trace" "modulo" "multiset" "node" "public"))
 
 ;; Comments
 (multi_comment) @comment
@@ -64,28 +63,15 @@
  (#any-of? @operator "==" "!="))
 
 [
-  "="
-  "<"
-  ">"
-  "<="
-  ">="
-  "+"
-  "-"
-  "*"
-  "/"
-  "^"
+  "--["
+  "]->"
+  ":"
 ] @operator
 
 [
-  "("
-  ")"
   "["
   "]"
-  "{"
-  "}"
-  ","
-  ";"
-  ":"
+  "\""
 ] @punctuation.delimiter
 
 ;; Special syntax for action brackets and arrows
@@ -107,4 +93,18 @@
 
 ;; Formulas and properties
 (formula) @structure.formula
-(property) @structure.property 
+(property) @structure.property
+
+;; Special parts of rules
+(premise) @premise
+(conclusion) @conclusion
+
+;; Trace quantifiers and exists-trace
+(trace_quantifier) @keyword.quantifier
+(exists-trace) @keyword.quantifier
+
+;; Simple rules
+(simple_rule) @rule.simple
+
+;; Pre-defined symbols
+(pre_defined) @constant 
