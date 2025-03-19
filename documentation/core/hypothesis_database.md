@@ -168,3 +168,9 @@
    - **Evidence**: Neovim attempts to load a parser file named after the filetype, not the language name.
    - **Evidence**: Creating a symlink to the existing parser file eliminates the need for file copying and ensures updates are propagated.
    - **Evidence**: Verification tests confirm improved parser loading success rate with this approach.
+
+22. **H22**: TreeSitter node types in highlights.scm must be verified against the actual grammar implementation.
+   - **Evidence**: Attempting to use node types like "all", "exists", "protocol", etc. that aren't defined in the grammar causes errors.
+   - **Evidence**: The error message "Query error at 18:4. Invalid node type "all": "all"" clearly indicates a reference to a non-existent node type.
+   - **Evidence**: Our node type validation script confirms which node types actually exist in the Tamarin grammar.
+   - **Evidence**: Removing unverified node types from the highlights.scm file resolves the query parsing error.

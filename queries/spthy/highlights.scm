@@ -1,7 +1,7 @@
 ;; Improved Tamarin Syntax Highlighting
 ;; Using node types and avoiding complex regex patterns
 
-;; Keywords
+;; Keywords - only including verified keywords
 [
   "theory"
   "begin"
@@ -15,13 +15,6 @@
   "builtins"
   "restriction"
   "axiom"
-  "all"
-  "exists"
-  "protocol"
-  "property"
-  "or"
-  "and"
-  "not"
   "if"
   "then"
   "else"
