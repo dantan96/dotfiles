@@ -3,6 +3,9 @@
 
 local M = {}
 
+-- Maximum number of diagnostic entries to print
+local MAX_DIAG_ENTRIES = 20
+
 -- Check if TreeSitter is available
 function M.check_treesitter_available()
   local result = {
@@ -84,11 +87,27 @@ function M.check_highlighting()
   return result
 end
 
--- Run a complete diagnosis
+-- Run a complete diagnosis with limited output
 function M.run_diagnosis()
   print("Running Tamarin TreeSitter Diagnostics...")
   print("----------------------------------------")
   
+  -- Capture and limit original print function to prevent infinite output
+  local original_print = print
+  local diag_count = 0
+  
+  -- Override print to limit output
+  _G.print = function(...)
+    if diag_count < MAX_DIAG_ENTRIES then
+      original_print(...)
+      diag_count = diag_count + 1
+    elseif diag_count == MAX_DIAG_ENTRIES then
+      original_print("... Output truncated for brevity ...")
+      diag_count = diag_count + 1
+    end
+  end
+  
+  -- Run diagnostics with limited output
   M.check_treesitter_available()
   print("----------------------------------------")
   
@@ -102,6 +121,9 @@ function M.run_diagnosis()
   print("----------------------------------------")
   
   print("Diagnosis complete.")
+  
+  -- Restore original print function
+  _G.print = original_print
   
   return true
 end
@@ -128,12 +150,18 @@ function M.check_parser_symbols()
       handle:close()
       
       print("\nSpthy parser symbols:")
-      print(result)
+      print(result:sub(1, 500)) -- Limit output
       
       if result:match("_tree_sitter_spthy") then
         print("✓ Symbol _tree_sitter_spthy found in spthy parser")
       else
         print("✗ Symbol _tree_sitter_spthy NOT found in spthy parser")
+      end
+      
+      if result:match("_tree_sitter_spthy_external_scanner_") then
+        print("✓ External scanner functions found in spthy parser")
+      else
+        print("✗ No external scanner functions found in spthy parser")
       end
     end
   end
@@ -146,7 +174,7 @@ function M.check_parser_symbols()
       handle:close()
       
       print("\nTamarin parser symbols:")
-      print(result)
+      print(result:sub(1, 500)) -- Limit output
       
       if result:match("_tree_sitter_spthy") and not result:match("tree_sitter_tamarin") then
         print("✓ Symbol _tree_sitter_spthy found in tamarin parser (suggests a name mismatch)")
