@@ -4,13 +4,13 @@ This document tracks the reading progress of TreeSitter documentation files. No 
 
 | File | Partial Reading | Complete Reading |
 |------|:--------------:|:----------------:|
-| documentation/treesitter/2 Operators.md | [ ] | [ ] |
-| documentation/treesitter/4 API.md | [ ] | [ ] |
-| documentation/treesitter/5 Implementation.md | [ ] | [ ] |
-| documentation/treesitter/6 Publishing.md | [ ] | [ ] |
-| documentation/treesitter/7 Playground.md | [ ] | [ ] |
-| documentation/treesitter/Advanced Parsing.md | [ ] | [ ] |
-| documentation/treesitter/Basic Parsing.md | [ ] | [ ] |
+| documentation/treesitter/2 Operators.md | [x] | [ ] |
+| documentation/treesitter/4 API.md | [x] | [ ] |
+| documentation/treesitter/5 Implementation.md | [x] | [ ] |
+| documentation/treesitter/6 Publishing.md | [x] | [ ] |
+| documentation/treesitter/7 Playground.md | [x] | [ ] |
+| documentation/treesitter/Advanced Parsing.md | [x] | [ ] |
+| documentation/treesitter/Basic Parsing.md | [x] | [ ] |
 | documentation/treesitter/Build Documentation.md | [ ] | [ ] |
 | documentation/treesitter/Code Navigation.md | [ ] | [ ] |
 | documentation/treesitter/Complete Documentation.md | [ ] | [ ] |
@@ -24,10 +24,10 @@ This document tracks the reading progress of TreeSitter documentation files. No 
 | documentation/treesitter/Highlight Documentation.md | [ ] | [ ] |
 | documentation/treesitter/Init Config.md | [ ] | [ ] |
 | documentation/treesitter/Parse Documentation.md | [ ] | [ ] |
-| documentation/treesitter/Predicates and Directives.md | [ ] | [ ] |
-| documentation/treesitter/Query Documentation.md | [ ] | [ ] |
+| documentation/treesitter/Predicates and Directives.md | [x] | [ ] |
+| documentation/treesitter/Query Documentation.md | [x] | [ ] |
 | documentation/treesitter/Static Node Types.md | [ ] | [ ] |
-| documentation/treesitter/Syntax Highlighting.md | [ ] | [ ] |
+| documentation/treesitter/Syntax Highlighting.md | [x] | [ ] |
 | documentation/treesitter/Tree Sitter CLI Version.md | [ ] | [ ] |
 | documentation/treesitter/Tree Sitter Init Documentation.md | [ ] | [ ] |
 | documentation/treesitter/Tree Sitter Playground.md | [ ] | [ ] |
@@ -45,16 +45,68 @@ This document tracks the reading progress of TreeSitter documentation files. No 
 | documentation/treesitter/syntax_highlighting_a_thorough_complete_plan_to_fix_forever_no_matter_what.md | [ ] | [ ] |
 | documentation/treesitter/treesitter_documentation_analysis.md | [ ] | [ ] |
 | test/h14_external_scanner_test.md | [ ] | [ ] |
-| test/h15_predicate_regex_test.md | [ ] | [ ] |
+| test/h15_predicate_regex_test.md | [x] | [ ] |
 | test/h16_highlighter_gc_test.md | [ ] | [ ] |
 | test/treesitter_fix_plan.md | [ ] | [ ] |
 | test/treesitter_regex_test_plan.md | [ ] | [ ] |
 
 ## Reading Progress
-- Files partially read: 0/46
+- Files partially read: 11/46
 - Files completely read: 0/46
-- Progress: 0%
+- Progress: 24%
 
 ## Notes
 - Files will be marked as "partially read" when they've been skimmed for key information
 - Files will be marked as "completely read" only when they've been thoroughly studied and fully understood
+
+## Initial Notes and Hypotheses from Reading
+
+### TreeSitter Operators (2 Operators.md)
+- TreeSitter query language has powerful capturing capabilities using the `@` syntax
+- Quantification operators (`+`, `*`, `?`) allow matching repeating patterns
+- Alternations (`[]`) provide a way to match multiple patterns or tokens
+- The anchor operator (`.`) is useful for constraining matches
+
+### TreeSitter API (4 API.md)
+- TreeSitter provides a C API for creating and executing queries
+- Query errors are classified into different types (syntax, node type, field, capture)
+- Results are provided as matches with captures
+
+### Implementation Details (5 Implementation.md)
+- TreeSitter has two main components: C library and CLI tool
+- The CLI generates parsers from grammars defined in JavaScript
+- Grammars are transformed into syntax and lexical grammars
+
+### Publishing Grammars (6 Publishing.md)
+- TreeSitter grammars should follow semantic versioning
+- Multiple publishing targets are recommended (GitHub, npm, crates.io, PyPI)
+
+### Advanced Parsing (Advanced Parsing.md)
+- TreeSitter supports incremental parsing with efficient tree editing
+- Multi-language documents are supported through included ranges
+- Thread safety is achieved through inexpensive tree copying
+
+### Basic Parsing (Basic Parsing.md)
+- Custom data structures can be used for source code storage
+- DOM-style interface for tree traversal
+- Distinction between named and anonymous nodes
+- Field names provide meaningful access to specific child nodes
+
+### Predicates and Directives (Predicates and Directives.md)
+- Predicates allow additional conditions to be attached to tree patterns
+- The `#match?` predicate is particularly useful for regex matching
+- Complex regex patterns in predicates can cause stack overflows
+- Multiple simple predicates can be used instead of one complex pattern
+- Directives can associate metadata with patterns
+
+### Syntax Highlighting (Syntax Highlighting.md)
+- TreeSitter provides a comprehensive syntax highlighting system
+- Syntax highlighting is configured through query files
+- Captures in the query file are mapped to highlight groups
+- Local variable tracking helps ensure consistent highlighting
+
+### Test: TreeSitter Predicates with Complex Regex Patterns (h15_predicate_regex_test.md)
+- Complex regex patterns in TreeSitter predicates can cause stack overflows
+- The Vim regex engine has limitations with certain pattern types
+- Breaking down complex patterns into multiple simpler predicates is more reliable
+- Apostrophes in patterns are particularly problematic for the Tamarin language
