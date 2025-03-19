@@ -9,20 +9,13 @@
   "restriction" "axiom" "if" "then" "else"
   "exists-trace"))
 
-;; Basic tree structure elements
-(theory
-  (ident) @type)
-
-(rule
-  (ident) @function.rule)
-
-(lemma
-  (ident) @function.lemma)
+;; Identifiers - directly capturing the ident node type
+(ident) @variable
 
 ;; Valid fact types
 (action_fact) @fact.action
 
-;; Rule components
+;; Rule components - directly matching the node types
 (premise) @premise
 (conclusion) @conclusion
 
@@ -35,7 +28,7 @@
 ;; Pre-defined symbols
 (pre_defined) @constant
 
-;; Symbol tokens - only using verified tokens
+;; Special tokens
 [
   "--["
   "]->"
