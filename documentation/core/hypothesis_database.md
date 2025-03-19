@@ -68,6 +68,12 @@
    - **Evidence**: Using a global registry approach to store the TreeSitter highlighter object avoids these type conversion issues.
    - **Evidence**: Our modified highlighter.lua implementation using this approach resolves the errors and maintains proper highlighting.
 
+23. **H23**: Using the most appropriate predicates supported by Neovim's TreeSitter implementation can avoid stack overflow issues.
+   - **Evidence**: Neovim's documentation lists specific predicates it supports, which include `eq?`, `match?`, `vim-match?`, `lua-match?`, `contains?`, `any-of?`, `has-ancestor?`, and `has-parent?`.
+   - **Evidence**: For captures with multiple nodes, Neovim provides special versions with the `any-` prefix (`any-eq?`, `any-match?`, `any-vim-match?`, `any-lua-match?`, `any-contains?`) that match if ANY node in the capture satisfies the condition rather than requiring ALL nodes to match.
+   - **Evidence**: The `any-of?` predicate is specifically optimized for checking if a node matches one of many keywords, making it more efficient than multiple separate predicates.
+   - **Evidence**: Using these predicates appropriately in highlights.scm can avoid complex regex patterns and reduce the risk of stack overflow.
+
 ## Falsified Hypotheses
 
 

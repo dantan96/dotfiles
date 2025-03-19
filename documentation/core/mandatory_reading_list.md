@@ -31,7 +31,7 @@ This document tracks the reading progress of TreeSitter documentation files. No 
 | documentation/treesitter/Tree Sitter CLI Version.md | [ ] | [ ] |
 | documentation/treesitter/Tree Sitter Init Documentation.md | [ ] | [ ] |
 | documentation/treesitter/Tree Sitter Playground.md | [ ] | [ ] |
-| documentation/treesitter/Tree Sitter Summary.md | [ ] | [ ] |
+| documentation/treesitter/Tree Sitter Summary.md | [x] | [ ] |
 | documentation/treesitter/Tree Sitter Tags.md | [ ] | [ ] |
 | documentation/treesitter/Tree Sitter Test.md | [ ] | [ ] |
 | documentation/treesitter/Using Parsers Syntax.md | [ ] | [ ] |
@@ -39,21 +39,21 @@ This document tracks the reading progress of TreeSitter documentation files. No 
 | documentation/treesitter/Writing Tests.md | [ ] | [ ] |
 | documentation/treesitter/Writing the Grammar.md | [x] | [ ] |
 | documentation/treesitter/highly_relevant_information_for_our_final_attempt.md | [x] | [ ] |
-| documentation/treesitter/hypotheses_treesitter_fallback.md | [ ] | [ ] |
-| documentation/treesitter/manually_adding_a_treesitter_parser_a_guide.md | [ ] | [ ] |
+| documentation/treesitter/hypotheses_treesitter_fallback.md | [x] | [ ] |
+| documentation/treesitter/manually_adding_a_treesitter_parser_a_guide.md | [x] | [ ] |
 | documentation/treesitter/simplifying_the_config.md | [x] | [ ] |
-| documentation/treesitter/syntax_highlighting_a_thorough_complete_plan_to_fix_forever_no_matter_what.md | [ ] | [ ] |
-| documentation/treesitter/treesitter_documentation_analysis.md | [ ] | [ ] |
+| documentation/treesitter/syntax_highlighting_a_thorough_complete_plan_to_fix_forever_no_matter_what.md | [x] | [ ] |
+| documentation/treesitter/treesitter_documentation_analysis.md | [x] | [ ] |
 | test/h14_external_scanner_test.md | [x] | [ ] |
 | test/h15_predicate_regex_test.md | [x] | [ ] |
 | test/h16_highlighter_gc_test.md | [x] | [ ] |
 | test/treesitter_fix_plan.md | [ ] | [ ] |
-| test/treesitter_regex_test_plan.md | [ ] | [ ] |
+| test/treesitter_regex_test_plan.md | [x] | [ ] |
 
 ## Reading Progress
-- Files partially read: 19/46
+- Files partially read: 24/46
 - Files completely read: 0/46
-- Progress: 41%
+- Progress: 52%
 
 ## Notes
 - Files will be marked as "partially read" when they've been skimmed for key information
@@ -158,3 +158,39 @@ This document tracks the reading progress of TreeSitter documentation files. No 
 - Premature garbage collection can cause syntax highlighting to fail
 - Proper storage and reference management is crucial for persistent highlighting
 - GC issues can explain why highlighting sometimes works initially but fails later
+
+### Tree Sitter Summary (Tree Sitter Summary.md)
+- Provides an overview of the TreeSitter documentation structure
+- Organizes content into User Guide and Reference Guide sections
+- User Guide covers using parsers, creating parsers, and applications
+- Reference Guide covers CLI tools and their options
+
+### TreeSitter Fallback Hypotheses (hypotheses_treesitter_fallback.md)
+- Contains detailed hypotheses about why TreeSitter might fall back to traditional highlighting
+- Covers issues like parser loading paths, filetype detection, and grammar parsing errors
+- Proposes test plans to validate each hypothesis
+- Suggests that multiple issues might be contributing to the fallback behavior
+
+### Adding a TreeSitter Parser (manually_adding_a_treesitter_parser_a_guide.md)
+- Provides step-by-step instructions for manually adding a TreeSitter parser to Neovim
+- Addresses symbol name mismatch problems with various solutions
+- Offers code examples for parser loading and language registration
+- Includes debugging techniques for parser integration issues
+
+### Comprehensive Fix Plan (syntax_highlighting_a_thorough_complete_plan_to_fix_forever_no_matter_what.md)
+- Outlines a phased approach to fixing TreeSitter syntax highlighting
+- Includes environment analysis, implementation, testing, validation, and documentation
+- Provides code examples for each phase
+- Describes fallback mechanisms for robustness
+
+### TreeSitter Documentation Analysis (treesitter_documentation_analysis.md)
+- Analyzes core documentation and extracts key findings
+- Focuses on parser requirements, language setup, query system, and buffer handling
+- Identifies documentation gaps and areas requiring additional research
+- Provides implementation recommendations based on documentation findings
+
+### TreeSitter Regex Test Plan (treesitter_regex_test_plan.md)
+- Outlines a plan for testing regex patterns in TreeSitter queries
+- Addresses specific hypotheses about regex complexity and stack overflow issues
+- Proposes tests for nested quantifiers, case-insensitive matching, and other patterns
+- Aims to develop guidelines for writing regex patterns that avoid stack overflow
