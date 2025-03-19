@@ -1,27 +1,16 @@
-;; Improved Tamarin Syntax Highlighting
+;; Enhanced Tamarin Syntax Highlighting
 ;; Using node types and avoiding complex regex patterns
+;; Utilizing Neovim-specific predicates for better performance
 
-;; Keywords - only including verified keywords
-[
-  "theory"
-  "begin"
-  "end"
-  "rule"
-  "lemma"
-  "let"
-  "in"
-  "functions"
-  "equations"
-  "builtins"
-  "restriction"
-  "axiom"
-  "if"
-  "then"
-  "else"
-  "section"
-  "subsection"
-  "text"
-] @keyword
+;; Keywords using the optimized any-of? predicate
+((ident) @keyword
+ (#any-of? @keyword
+  "theory" "begin" "end" "rule" "lemma"
+  "let" "in" "functions" "equations" "builtins"
+  "restriction" "axiom" "if" "then" "else"
+  "section" "subsection" "text"
+  "modulo" "multiset" "node" "public" "exists"
+  "all" "Fr" "In" "Out" "Choose"))
 
 ;; Comments
 (multi_comment) @comment
@@ -35,10 +24,10 @@
   rule_name: (ident) @function.rule)
 
 (lemma
-  lemma_name: (ident) @function.rule)
+  lemma_name: (ident) @function.lemma)
   
 (restriction
-  restriction_name: (ident) @function.rule)
+  restriction_name: (ident) @function.restriction)
 
 (builtins
   (ident) @type.builtin)
@@ -58,6 +47,12 @@
 ;; Functions
 (function_name) @function
 (function_untyped) @function
+(function_decl name: (ident) @function.declaration)
+
+;; Protocol steps - frequently used in Tamarin
+(protocol_step
+  number: (number) @number.step
+  name: (ident) @function.step)
 
 ;; Numbers and strings
 (number) @number
@@ -65,10 +60,11 @@
 (string) @string
 
 ;; Operators and delimiters
+((ident) @operator
+ (#any-of? @operator "==" "!="))
+
 [
   "="
-  "=="
-  "!="
   "<"
   ">"
   "<="
@@ -95,4 +91,20 @@
 ;; Special syntax for action brackets and arrows
 (arrow) @punctuation.special
 (action_start) @action.brackets
-(action_end) @action.brackets 
+(action_end) @action.brackets
+
+;; Formula elements like quantifiers (verified as actual node types)
+(exists_quantifier) @keyword.quantifier
+(forall_quantifier) @keyword.quantifier
+
+;; Terms and message components
+(tuple) @structure
+(xor) @operator.xor
+(chain) @operator.chain
+
+;; Equations and term equality
+(equation left: (_) @variable.left right: (_) @variable.right) 
+
+;; Formulas and properties
+(formula) @structure.formula
+(property) @structure.property 
