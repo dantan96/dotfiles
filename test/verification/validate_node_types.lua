@@ -4,8 +4,82 @@
 
 local M = {}
 
+-- Helper function to find the parser in standard locations
+local function find_parser()
+    local possible_paths = {
+        vim.fn.stdpath('config') .. '/parser/spthy/spthy.so',
+        vim.fn.stdpath('config') .. '/parser/tamarin/tamarin.so',
+        vim.fn.stdpath('data') .. '/site/pack/packer/start/nvim-treesitter/parser/spthy.so',
+        vim.fn.stdpath('data') .. '/site/pack/lazy/opt/nvim-treesitter/parser/spthy.so',
+        vim.fn.stdpath('data') .. '/lazy/nvim-treesitter/parser/spthy.so'
+    }
+    
+    -- Try to find a parser file
+    for _, path in ipairs(possible_paths) do
+        if vim.fn.filereadable(path) == 1 then
+            return path
+        end
+    end
+    
+    return nil
+end
+
+-- Function to ensure parser is loaded
+local function ensure_parser_loaded()
+    print("Ensuring parser is loaded...")
+    
+    -- Try to register language mapping
+    if vim.treesitter.language and vim.treesitter.language.register then
+        print("Registering spthy language for tamarin filetype...")
+        pcall(vim.treesitter.language.register, 'spthy', 'tamarin')
+    end
+    
+    -- First check if parser is already accessible
+    local parser_ok = pcall(function()
+        return vim.treesitter.get_parser(0, "spthy")
+    end)
+    
+    if parser_ok then
+        print("Parser already loaded!")
+        return true
+    end
+    
+    -- Find parser file
+    local parser_path = find_parser()
+    if not parser_path then
+        print("ERROR: Could not find parser file in standard locations")
+        return false
+    end
+    
+    print("Found parser at: " .. parser_path)
+    
+    -- Try to add the language explicitly
+    if vim.treesitter.language and vim.treesitter.language.add then
+        print("Adding spthy language from: " .. parser_path)
+        local add_ok = pcall(vim.treesitter.language.add, 'spthy', {
+            path = parser_path
+        })
+        
+        if add_ok then
+            print("Successfully added language using path: " .. parser_path)
+            return true
+        else
+            print("Failed to add language using path")
+        end
+    end
+    
+    print("Could not load parser")
+    return false
+end
+
 -- Function to extract all node types from a file
 local function extract_node_types(file_path)
+    -- First ensure the parser is loaded
+    if not ensure_parser_loaded() then
+        print("ERROR: Parser could not be loaded, cannot extract node types")
+        return {}
+    end
+    
     -- Create a temporary buffer with some Tamarin code
     local bufnr = vim.api.nvim_create_buf(false, true)
     local contents = {}
@@ -44,11 +118,6 @@ local function extract_node_types(file_path)
     
     vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, contents)
     vim.api.nvim_buf_set_option(bufnr, "filetype", "tamarin")
-    
-    -- Register the language mapping (this is crucial for the parser to work)
-    if vim.treesitter.language and vim.treesitter.language.register then
-        pcall(vim.treesitter.language.register, 'spthy', 'tamarin')
-    end
     
     -- Parse the buffer with a pcall to handle errors
     local success, parser = pcall(vim.treesitter.get_parser, bufnr, "spthy")
@@ -191,14 +260,6 @@ function M.run_validation()
     end, 3000)  -- 3 second timeout
 
     print("Starting node type validation for Tamarin/Spthy...")
-    
-    -- Register the language mapping (this is crucial for the parser to work)
-    if vim.treesitter.language and vim.treesitter.language.register then
-        local reg_success = pcall(vim.treesitter.language.register, 'spthy', 'tamarin')
-        if not reg_success then
-            print("Failed to register language mapping")
-        end
-    end
     
     -- Set log file path
     local log_file = vim.fn.stdpath("cache") .. "/tamarin_node_types.log"
