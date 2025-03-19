@@ -10,13 +10,13 @@
 
 ;; Basic tree structure elements
 (theory
-  theory_name: (ident) @type)
+  (ident) @type)
 
 (rule
-  rule_name: (ident) @function.rule)
+  (ident) @function.rule)
 
 (lemma
-  lemma_name: (ident) @function.lemma)
+  (ident) @function.lemma)
 
 ;; Valid fact types
 (action_fact) @fact.action
