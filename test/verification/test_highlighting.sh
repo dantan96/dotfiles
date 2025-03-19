@@ -28,8 +28,8 @@ timeout 5 nvim --headless \
   -c "set filetype=tamarin" \
   -c "TSEnable highlight" \
   -c "sleep 1" \
-  -c "TSHighlightCapturesUnderCursor" \
   -c "lua vim.notify('Syntax highlighting test completed')" \
+  -c "lua if vim.treesitter.highlighter.active[0] then vim.notify('Highlighter is active!') else vim.notify('Highlighter is NOT active!', vim.log.levels.ERROR) end" \
   -c "qa!"
 
 echo "Test completed. The file was successfully highlighted."
