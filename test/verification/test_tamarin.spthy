@@ -1,0 +1,38 @@
+theory TestHighlighting
+begin
+
+builtins: diffie-hellman, signing
+
+// Test comments
+/* Multiline
+   comment */
+
+rule KeyGen:
+  let
+    sk = ~sk  // Fresh variable
+    pk = pk(sk)
+  in
+  [ Fr(~sk) ]
+  --[ KeyGenerated(pk) ]->
+  [ !Ltk($A, pk), Out(pk) ]
+
+rule Protocol_Start:
+  let
+    pubB = 'pubB' // String constant
+    g = 'g'
+    X = 'X'
+    Y = 'Y'
+  in
+  [ Fr(~x)
+  , !Ltk($A, pkA)
+  , !Ltk($B, pkB) ]
+  --[ ProtocolStarted($A, $B, ~x) ]->
+  [ Out(<$A, $B, X, pkA>) ]
+
+lemma key_secrecy:
+  "All A B k #i.
+    ( Secret(A, B, k) @ #i ) ==>
+    ( (Ex #j. K(k) @ #j) ==> (Ex #r. Reveal(A) @ #r) | (Ex #r. Reveal(B) @ #r) )
+  "
+
+end 
