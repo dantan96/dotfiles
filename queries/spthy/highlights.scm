@@ -6,7 +6,8 @@
  (#any-of? @keyword
   "theory" "begin" "end" "rule" "lemma"
   "let" "in" "functions" "equations" "builtins"
-  "restriction" "axiom" "if" "then" "else"))
+  "restriction" "axiom" "if" "then" "else"
+  "exists-trace"))
 
 ;; Basic tree structure elements
 (theory
@@ -27,7 +28,6 @@
 
 ;; Quantifiers
 (trace_quantifier) @keyword.quantifier
-(exists-trace) @keyword.quantifier
 
 ;; Rule types
 (simple_rule) @rule.simple
