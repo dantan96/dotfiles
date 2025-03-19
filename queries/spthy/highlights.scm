@@ -1,21 +1,14 @@
-;; Enhanced Tamarin Syntax Highlighting
-;; Using validated node types and avoiding complex regex patterns
-;; Utilizing Neovim-specific predicates for better performance
+;; Tamarin Syntax Highlighting - Valid Node Types Only
+;; This file contains only valid node types from the parser
 
-;; Keywords using the optimized any-of? predicate
+;; Keywords can be highlighted using the ident capture with any-of?
 ((ident) @keyword
  (#any-of? @keyword
   "theory" "begin" "end" "rule" "lemma"
   "let" "in" "functions" "equations" "builtins"
-  "restriction" "axiom" "if" "then" "else"
-  "section" "subsection" "text"
-  "exists-trace" "modulo" "multiset" "node" "public"))
+  "restriction" "axiom" "if" "then" "else"))
 
-;; Comments
-(multi_comment) @comment
-(single_comment) @comment
-
-;; Basic types and identifiers
+;; Basic tree structure elements
 (theory
   theory_name: (ident) @type)
 
@@ -24,44 +17,25 @@
 
 (lemma
   lemma_name: (ident) @function.lemma)
-  
-(restriction
-  restriction_name: (ident) @function.restriction)
 
-(builtins
-  (ident) @type.builtin)
-
-;; Variables (using node types rather than regex)
-(variable) @variable
-(message_variable) @variable.message
-(fresh_variable) @variable.fresh
-(public_variable) @variable.public
-(temporal_variable) @variable.temporal
-
-;; Facts
-(linear_fact) @fact.linear
-(persistent_fact) @fact.persistent
+;; Valid fact types
 (action_fact) @fact.action
 
-;; Functions
-(function_name) @function
-(function_untyped) @function
-(function_decl name: (ident) @function.declaration)
+;; Rule components
+(premise) @premise
+(conclusion) @conclusion
 
-;; Protocol steps - frequently used in Tamarin
-(protocol_step
-  number: (number) @number.step
-  name: (ident) @function.step)
+;; Quantifiers
+(trace_quantifier) @keyword.quantifier
+(exists-trace) @keyword.quantifier
 
-;; Numbers and strings
-(number) @number
-(natural) @number
-(string) @string
+;; Rule types
+(simple_rule) @rule.simple
 
-;; Operators and delimiters
-((ident) @operator
- (#any-of? @operator "==" "!="))
+;; Pre-defined symbols
+(pre_defined) @constant
 
+;; Symbol tokens - only using verified tokens
 [
   "--["
   "]->"
@@ -74,37 +48,5 @@
   "\""
 ] @punctuation.delimiter
 
-;; Special syntax for action brackets and arrows
-(arrow) @punctuation.special
-(action_start) @action.brackets
-(action_end) @action.brackets
-
-;; Formula elements like quantifiers (verified as actual node types)
-(exists_quantifier) @keyword.quantifier
-(forall_quantifier) @keyword.quantifier
-
-;; Terms and message components
-(tuple) @structure
-(xor) @operator.xor
-(chain) @operator.chain
-
-;; Equations and term equality
-(equation left: (_) @variable.left right: (_) @variable.right) 
-
-;; Formulas and properties
-(formula) @structure.formula
-(property) @structure.property
-
-;; Special parts of rules
-(premise) @premise
-(conclusion) @conclusion
-
-;; Trace quantifiers and exists-trace
-(trace_quantifier) @keyword.quantifier
-(exists-trace) @keyword.quantifier
-
-;; Simple rules
-(simple_rule) @rule.simple
-
-;; Pre-defined symbols
-(pre_defined) @constant 
+;; Error nodes - useful for diagnostics
+(ERROR) @error 
