@@ -30,17 +30,28 @@ function M.has_treesitter()
   return vim.treesitter ~= nil and vim.treesitter.language ~= nil
 end
 
--- Find the parser file
+-- Find the parser file with robust fallback options
 function M.find_parser()
-  local parser_path = vim.fn.stdpath('config') .. '/parser/spthy/spthy.so'
-  if vim.fn.filereadable(parser_path) == 1 then
-    log("Found parser at " .. parser_path)
-    return parser_path
+  -- List of potential parser paths
+  local parser_paths = {
+    vim.fn.stdpath('config') .. '/parser/spthy/spthy.so',
+    vim.fn.stdpath('config') .. '/parser/tamarin/tamarin.so',
+  }
+  
+  -- Check each path
+  for _, path in ipairs(parser_paths) do
+    if vim.fn.filereadable(path) == 1 then
+      log("Found parser at " .. path)
+      return path
+    end
   end
   
-  local runtime_parsers = vim.api.nvim_get_runtime_file('parser/spthy/spthy.so', false)
+  -- Try runtime paths
+  local runtime_parsers = vim.api.nvim_get_runtime_file('parser/*/spthy.so', false)
+  vim.list_extend(runtime_parsers, vim.api.nvim_get_runtime_file('parser/*/tamarin.so', false))
+  
   if #runtime_parsers > 0 then
-    log("Found parser at " .. runtime_parsers[1])
+    log("Found runtime parser at " .. runtime_parsers[1])
     return runtime_parsers[1]
   end
   
@@ -72,7 +83,7 @@ function M.check_external_scanner()
   return false
 end
 
--- Register the parser with TreeSitter
+-- Register the parser with TreeSitter using multiple methods for robustness
 function M.register_parser()
   if not M.has_treesitter() then
     log("TreeSitter not available", vim.log.levels.WARN)
@@ -81,46 +92,91 @@ function M.register_parser()
   
   local parser_path = M.find_parser()
   if not parser_path then
+    log("No parser found", vim.log.levels.ERROR)
     return false
   end
   
-  -- Check neovim version for API compatibility
-  local nvim_version = vim.version()
-  local nvim_0_9_plus = (nvim_version and nvim_version.major >= 0 and nvim_version.minor >= 9)
+  local registration_success = false
+  local methods_tried = 0
+  local methods_succeeded = 0
   
-  -- Try different registration methods based on Neovim version
-  local registration_ok = false
+  -- Method 1: Direct language registration (available in 0.9+)
+  methods_tried = methods_tried + 1
+  local register_ok = pcall(function()
+    vim.treesitter.language.register('spthy', 'tamarin')
+  end)
   
-  -- Method 1: Simple language registration
-  local ok1, _ = safe_call(vim.treesitter.language.register, 'spthy', 'tamarin')
-  log("Basic language registration result: " .. tostring(ok1))
-  
-  -- Method 2: For Neovim 0.9+, use explicit language addition with path
-  if nvim_0_9_plus and vim.treesitter.language.add then
-    local ok2, _ = safe_call(vim.treesitter.language.add, 'spthy', { path = parser_path })
-    log("Advanced language add result: " .. tostring(ok2))
-    registration_ok = ok1 or ok2
+  if register_ok then
+    log("Method 1: Direct language registration succeeded")
+    methods_succeeded = methods_succeeded + 1
+    registration_success = true
   else
-    registration_ok = ok1
+    log("Method 1: Direct language registration failed")
   end
   
-  -- Method 3: Try setting parser_info as a fallback
-  if not registration_ok then
-    log("Attempting fallback registration method", vim.log.levels.INFO)
-    -- Check if parser_info exists in treesitter
+  -- Method 2: Explicit parser addition with path (available in 0.9+)
+  methods_tried = methods_tried + 1
+  local add_ok = pcall(function()
+    vim.treesitter.language.add('spthy', { path = parser_path })
+  end)
+  
+  if add_ok then
+    log("Method 2: Parser addition succeeded")
+    methods_succeeded = methods_succeeded + 1
+    registration_success = true
+  else
+    log("Method 2: Parser addition failed")
+  end
+  
+  -- Method 3: Parser info override (fallback method)
+  methods_tried = methods_tried + 1
+  local fallback_ok = pcall(function()
     if vim.treesitter._has_parser then
-      local ok3 = pcall(function()
-        vim.treesitter._has_parser['tamarin'] = function() return true end
-        vim.treesitter._has_parser['spthy'] = function() return true end
-      end)
-      log("Fallback registration result: " .. tostring(ok3))
-      registration_ok = ok3
+      vim.treesitter._has_parser['tamarin'] = function() return true end
+      vim.treesitter._has_parser['spthy'] = function() return true end
+    end
+  end)
+  
+  if fallback_ok then
+    log("Method 3: Parser info override succeeded")
+    methods_succeeded = methods_succeeded + 1
+    registration_success = registration_success or true
+  else
+    log("Method 3: Parser info override failed")
+  end
+  
+  -- Method 4: Create a symbolic link from tamarin to spthy (Unix-like systems only)
+  if vim.fn.has('unix') == 1 and not registration_success then
+    methods_tried = methods_tried + 1
+    
+    local spthy_dir = vim.fn.fnamemodify(parser_path, ':h')
+    local tamarin_dir = vim.fn.stdpath('config') .. '/parser/tamarin'
+    
+    -- Create tamarin dir if it doesn't exist
+    if vim.fn.isdirectory(tamarin_dir) == 0 then
+      vim.fn.mkdir(tamarin_dir, 'p')
+    end
+    
+    local symlink_ok = pcall(function()
+      vim.fn.system('ln -sf ' .. vim.fn.shellescape(parser_path) .. ' ' .. 
+                   vim.fn.shellescape(tamarin_dir .. '/tamarin.so'))
+    end)
+    
+    if symlink_ok then
+      log("Method 4: Symbolic link creation succeeded")
+      methods_succeeded = methods_succeeded + 1
+      registration_success = true
+    else
+      log("Method 4: Symbolic link creation failed")
     end
   end
   
+  log(string.format("Parser registration: %d/%d methods succeeded", 
+                   methods_succeeded, methods_tried))
+  
   -- Check if the parser has external scanner functions
   local has_scanner = M.check_external_scanner()
-  if registration_ok then
+  if registration_success then
     if has_scanner then
       log("Parser with external scanner registered successfully")
     else
@@ -130,7 +186,7 @@ function M.register_parser()
     log("Failed to register parser", vim.log.levels.ERROR)
   end
   
-  return registration_ok
+  return registration_success
 end
 
 -- Clean up inconsistent directory structure
@@ -164,6 +220,7 @@ end
 
 -- Set up filetype detection
 function M.setup_filetype_detection()
+  -- Modern API (Neovim 0.8+)
   if vim.filetype and vim.filetype.add then
     vim.filetype.add({
       extension = {
