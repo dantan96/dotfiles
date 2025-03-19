@@ -1,0 +1,41 @@
+theory FixedTest
+begin
+
+builtins: diffie-hellman, hashing, symmetric-encryption
+
+// Test macro definitions - should have macro keyword purple, macro names tomato italic
+macro MAC(k, m) = mac(m, k)
+macro KDF(k, n) = kdf(k, n)
+macro PK($A) = pk($A)
+
+// Test macro usage - should have tomato italic names, variables properly colored
+rule TestMacros:
+  let
+    pubkey = PK($A)  // Macro usage with variable
+    tag = mac(~k, $A)  // Built-in function with variables
+    t'' = MAC(k, m)  // Macro usage with apostrophe var
+  in
+  [ Fr(~k) ]
+  -->
+  [ Out(<pubkey, tag>) ]
+
+// Test restriction - name should be gold bold, not italic
+restriction Equality:
+  "All x y #i. Eq(x,y) @i ==> x = y"
+
+// Test rule with name - should be gold bold, not italic
+rule RuleName:
+  [ Fr(~k) ] 
+  -->
+  [ !Key($A, ~k) ]
+
+// Test lemma with name - should be gold bold, not italic
+lemma LemmaName:
+  "All A B #i. Test(A, B) @ #i ==> Ex #j. K(A)"
+
+// Test preprocessor directives
+#ifdef PREPROCESSING
+/* Preprocessor directives are properly highlighted now */
+#endif
+
+end

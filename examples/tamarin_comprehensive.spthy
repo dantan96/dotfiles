@@ -1,0 +1,192 @@
+/* 
+ * Comprehensive Tamarin Protocol Example
+ * This file showcases various syntax features of the Tamarin specification language
+ */
+
+theory TamarinSyntaxShowcase
+begin
+
+// Built-in equational theories
+builtins: diffie-hellman, symmetric-encryption, signing, hashing, multiset
+
+// Function definitions with different arities and attributes
+functions: 
+  f/1,            // Unary function 
+  g/2,            // Binary function
+  h/3,            // Ternary function
+  kdf/2,          // Key derivation function
+  mac/2,          // Message authentication code
+  enc/2, dec/2,   // Encryption/decryption
+  custom/42       // Function with large arity
+
+// Private functions
+functions: 
+  secret_func/1 [private],
+  trusted_hash/2 [private]
+
+// Equations
+equations:
+  dec(enc(m, k), k) = m  // Decryption equation
+
+// Rule with fresh value generation
+rule Generate_Key:
+  [ Fr(~k) ]  // Fresh fact with fresh variable ~k
+  -->
+  [ !Key($A, ~k) ]  // Persistent fact with public variable $A
+
+// Rule with explanation comments and formula annotations
+rule Register_PublicKey:
+  let 
+    pk = 'g'^~ltk  // Exponentiation for public key
+  in
+  [ Fr(~ltk),         // Fresh random value for long-term key
+    In($A),           // Public identity input 
+    !Params(p)        // Global parameters
+  ]
+  --[ RegisterKey($A, pk),     // Action fact for key registration
+      Once($A)                 // Action fact for uniqueness
+  ]->
+  [ !LongTermKey($A, ~ltk),    // Store private key
+    !PublicKey($A, pk),        // Publish public key
+    Out(pk)                    // Output the public key
+  ]
+
+// Rule with pattern matching and if-condition
+rule Encrypt_Message:
+  let 
+    cipher = senc(m, ~k)  // Symmetric encryption
+  in
+  [ In(m),                // Message to encrypt
+    !Key(A, ~k)           // Look up the key
+  ]
+  --[ Encrypt(A, m) ]->   // Record the encryption
+  [ Out(cipher) ]         // Output ciphertext
+
+// Rule with advanced pattern matching and multiple fresh values
+rule Handshake_Initiate:
+  let
+    gx = 'g'^~x             // DH component
+    h = hash(<$A, $B, gx>)  // Hash of transcript
+  in
+  [ Fr(~x),                 // Fresh exponent
+    Fr(~sid),               // Fresh session ID
+    !PublicKey($B, pkB)     // B's public key
+  ]
+  --[ 
+      Initiator($A, $B, ~sid),               // Record initiation
+      Running($A, $B, <'init', ~x, gx, h>)   // Running with role and data
+  ]->
+  [ Init_1($A, $B, ~x, ~sid, h),             // State for next step
+    Out(<$A, $B, gx, h>)                     // Send initiation message
+  ]
+
+// Rule with complex action facts and restrictions
+rule Handshake_Response:
+  let
+    gy = 'g'^~y                     // Responder's DH component
+    h1 = hash(<$A, $B, gx>)         // Verify hash from initiator
+    h2 = hash(<$A, $B, gx, gy>)     // Extended hash with response
+    shared_secret = gx^~y           // DH shared secret
+    mac_value = mac(h2, shared_secret)  // MAC for authentication
+  in
+  [ In(<$A, $B, gx, h1>),           // Receive initiator's message
+    Fr(~y),                          // Fresh value for response
+    Fr(~sid),                        // Responder's session ID
+    !LongTermKey($B, ~ltkB)         // B's long-term key
+  ]
+  --[ 
+      Eq(h1, hash(<$A, $B, gx>)),   // Check hash validity
+      Responder($B, $A, ~sid),      // Record responder role
+      Running($B, $A, <'resp', ~y, gy, h2>) // Running with role and data
+  ]->
+  [ Resp_1($B, $A, ~y, ~sid, gx, shared_secret),  // State for next step
+    Out(<$B, $A, gy, mac_value>)                  // Send response
+  ]
+
+// Rule showing multi-line action facts block
+rule Complete_Handshake:
+  let
+    shared_secret = gy^~x    // Recompute shared secret
+    expected_mac = mac(hash(<$A, $B, gx, gy>), shared_secret)
+  in
+  [ Init_1($A, $B, ~x, ~sid_A, h),
+    In(<$B, $A, gy, mac>)
+  ]
+  --[ 
+      // Multiple action facts showing different types of facts
+      Eq(mac, expected_mac),                // Check MAC validity
+      Commit($A, $B, <'init', ~x, gy, shared_secret>),
+      Secret($A, $B, shared_secret),        // Mark as secret
+      SidMatch($A, ~sid_A, $B, 'sid_B'),    // Session ID check
+      Neq($A, $B),                          // Inequality restriction
+      FinishInitiator($A, $B, ~sid_A)       // Handshake completion
+  ]->
+  [ SessionKey($A, $B, ~sid_A, shared_secret) ]
+
+// Restrictions with formulas
+restriction Equality:
+  "All x y #i. Eq(x,y) @i ==> x = y"
+
+restriction Inequality:
+  "All x y #i. Neq(x,y) @i ==> not(x = y)"
+
+restriction Uniqueness:
+  "All x #i #j. Once(x) @i & Once(x) @j ==> #i = #j"
+
+// Lemmas showing different quantifiers and logical operators
+lemma key_secrecy:
+  "All A B k #i.
+    Secret(A, B, k) @i ==>
+    not(Ex #j. K(k) @j) |
+    (Ex #r. Reveal(A) @r & r < i) |
+    (Ex #r. Reveal(B) @r & r < i)"
+
+lemma agreement:
+  "All A B params #i.
+    Commit(A, B, params) @i ==>
+    (Ex #j. Running(B, A, params) @j & j < i) |
+    (Ex #r. Reveal(B) @r & r < i)"
+
+lemma session_key_distinct:
+  "All A1 A2 B1 B2 sid1 sid2 k #i #j.
+    SessionKey(A1, B1, sid1, k) @i &
+    SessionKey(A2, B2, sid2, k) @j &
+    not(A1 = A2 & B1 = B2 & sid1 = sid2)
+    ==> F"
+
+// Source lemma with unique label
+lemma sources [sources]:
+  "All A x #i.
+    SourceData(A, x) @i
+    ==> (Ex #j. KU(x) @j & j < i)
+        | (Ex B #j. ImportedData(B, x) @j & j < i)"
+
+// Observational equivalence
+lemma obseq_key_secrecy:
+  "All A B sid k1 k2 #i #j.
+    SessionKey(A, B, sid, k1) @i &
+    SessionKey(A, B, sid, k2) @j
+    ==> k1 = k2"
+
+// Sanity check with exists-trace
+lemma sanity_check [exists-trace]:
+  "Ex A B sid k #i. SessionKey(A, B, sid, k) @i"
+
+// Advanced function usage and multi-pattern rule
+rule Advanced_Processing:
+  [ In(<x, y, z>),
+    SessionKey(A, B, sid, k)
+  ]
+  --[ 
+      ProcessedInput(x, y, z),
+      Processed(A, B)
+  ]->
+  [ Out(mac(hash(<x, y>), k)),
+    Out(senc(z, k))
+  ]
+
+// Macro definition
+// macros[custom]:
+//   mac2(m, k) = h(<m, k>)
+
+end

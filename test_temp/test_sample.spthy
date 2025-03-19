@@ -1,0 +1,11 @@
+theory Example
+begin
+builtins: diffie-hellman
+functions: f/2, g/1 [private]
+rule Test:
+  [ Fr(~k) ]
+  --[ TestAction(~k) ]->
+  [ Out(~k) ]
+lemma secrecy:
+  "All x #i. Secret(x) @ i ==> not(Ex #j. K(x) @ j)"
+end

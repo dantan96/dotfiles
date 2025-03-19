@@ -48,18 +48,27 @@ EOF
   rm -f "$LOG_FILE"
   
   # Run neovim headlessly with test file
-  timeout 5s nvim --headless -u init.lua "$TEST_FILE" -c "qa!" 2> "$LOG_FILE" || echo "Nvim exited with code $?"
+  # Increase timeout to 10 seconds for more time to load parsers
+  timeout 10s nvim --headless -u init.lua "$TEST_FILE" -c "qa!" 2> "$LOG_FILE" || echo "Nvim exited with code $?"
   
   # Check for errors
   if grep -q -E "treesitter|regex|parse|query|E5108|E874|stack" "$LOG_FILE"; then
     echo -e "${RED}❌ FAILED: TreeSitter errors found with $variant_name${NC}"
     echo -e "${RED}--- Error log start ---${NC}"
-    grep -E "treesitter|regex|parse|query|E5108|E874|stack" "$LOG_FILE"
+    # Display entire log file instead of just filtered errors
+    cat "$LOG_FILE"
     echo -e "${RED}--- Error log end ---${NC}"
     FAILED_VARIANTS="$FAILED_VARIANTS $variant_name"
   else
     echo -e "${GREEN}✅ PASSED: No TreeSitter errors with $variant_name${NC}"
     PASSED_VARIANTS="$PASSED_VARIANTS $variant_name"
+  fi
+  
+  # Also display parser_loader.log for more detailed debugging
+  if [ -f "$TEST_DIR/parser_loader.log" ]; then
+    echo -e "${YELLOW}--- Parser loader log for $variant_name ---${NC}"
+    tail -n 50 "$TEST_DIR/parser_loader.log"
+    echo -e "${YELLOW}--- End of parser loader log ---${NC}"
   fi
   
   echo ""
@@ -97,21 +106,30 @@ echo ""
 if [ -n "$FAILED_VARIANTS" ]; then
   echo "=== Analysis of Failing Variants ==="
   for variant in $FAILED_VARIANTS; do
-    # Find what's in this variant but not in the preceding variant
-    variant_num=${variant#*_}
-    prev_num=$((10#${variant_num%_*} - 1))
-    if [ $prev_num -lt 1 ]; then
-      echo "Cannot analyze $variant (no preceding variant)"
-      continue
-    fi
+    # Remove extension to get just the number and name
+    variant_base=${variant##*.}
     
-    prev_variant="queries/spthy/highlights.scm.0${prev_num}_"*
-    if [ ! -f "$prev_variant" ]; then
-      echo "Cannot find preceding variant for $variant"
-      continue
+    # Extract the variant number (01, 02, etc.)
+    if [[ $variant_base =~ ^([0-9]+)_ ]]; then
+      variant_num=${BASH_REMATCH[1]}
+      prev_num=$((10#$variant_num - 1))
+      
+      # Format previous number with leading zero if needed
+      if [ $prev_num -lt 10 ]; then
+        prev_num="0$prev_num"
+      fi
+      
+      # Find previous variant file
+      prev_variant=$(find queries/spthy/ -name "highlights.scm.${prev_num}_*" -type f)
+      
+      if [ -n "$prev_variant" ]; then
+        echo "Comparing $variant with $(basename $prev_variant)..."
+        diff -u "$prev_variant" "queries/spthy/highlights.scm.$variant" | grep -E "^\+" | grep -v "^+++"
+      else
+        echo "Cannot find preceding variant for $variant_base"
+      fi
+    else
+      echo "Cannot analyze $variant_base (invalid variant name format)"
     fi
-    
-    echo "Comparing $variant with $prev_variant..."
-    diff -u "$prev_variant" "queries/spthy/highlights.scm.$variant" | grep -E "^\+" | grep -v "^+++"
   done
 fi 
