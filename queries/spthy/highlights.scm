@@ -60,10 +60,26 @@
 (msg_var_or_nullary_fun) @variable.message
 (nat_var) @variable.number
 
-;; Adding back one regex pattern for testing
+;; Adding regex patterns for testing
 ;; Message variables with apostrophes
 ((ident) @variable.message
   (#match? @variable.message "^[a-z][a-zA-Z0-9_]*'$"))
+
+;; Public variables with apostrophes
+((ident) @variable.public
+  (#match? @variable.public "^\\$[a-zA-Z][a-zA-Z0-9_]*'$"))
+
+;; Fresh variables with apostrophes
+((ident) @variable.fresh
+  (#match? @variable.fresh "^~[a-zA-Z][a-zA-Z0-9_]*'$"))
+
+;; Temporal variables with apostrophes
+((ident) @variable.temporal
+  (#match? @variable.temporal "^#[a-zA-Z][a-zA-Z0-9_]*'$"))
+
+;; Testing string literals with single quotes
+((ident) @public.constant
+  (#match? @public.constant "^'[^']*'$"))
 
 ;; Constants and numbers
 (natural) @number
