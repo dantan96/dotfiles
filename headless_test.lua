@@ -63,7 +63,9 @@ log("Test file opened: " .. vim.api.nvim_buf_get_name(0))
 
 -- STEP 5: Set filetype
 log("Setting filetype to tamarin...")
-safe_call(vim.cmd, "set filetype=tamarin")
+pcall(function()
+  vim.cmd("set filetype=tamarin")
+end)
 log("Filetype set to: " .. vim.bo.filetype)
 
 -- STEP 6: Collect basic buffer info
@@ -74,16 +76,42 @@ log("  Name: " .. vim.api.nvim_buf_get_name(0))
 
 -- STEP 7: Try to set up highlighting
 log("Setting up highlighting...")
-local highlight_ok, highlight_result = safe_call(tamarin.ensure_highlighting, 0)
+local highlight_ok, highlight_result = pcall(tamarin.ensure_highlighting, 0)
 log("Highlighting setup: " .. (highlight_ok and "SUCCESS" or "FAILED"))
 
--- STEP 8: Check language registration
+-- STEP 8: Check language registration - Multiple methods
 log("Checking language registration...")
 local lang_registered = false
+
+-- Method 1: Using language.get (newer Neovim)
 if vim.treesitter and vim.treesitter.language and vim.treesitter.language.get then
   local lang_ok, lang = pcall(vim.treesitter.language.get, 'spthy')
-  lang_registered = lang_ok and lang ~= nil
+  if lang_ok and lang then
+    lang_registered = true
+    log("Language registration method 1: SUCCESS")
+  end
 end
+
+-- Method 2: Check if _has_parser includes spthy (fallback)
+if not lang_registered and vim.treesitter and vim.treesitter._has_parser then
+  if type(vim.treesitter._has_parser) == "table" and vim.treesitter._has_parser.spthy then
+    lang_registered = true
+    log("Language registration method 2: SUCCESS")
+  end
+end
+
+-- Method 3: Try to get parser for spthy language
+if not lang_registered and vim.treesitter and vim.treesitter.get_parser then
+  local parser_ok, parser = pcall(vim.treesitter.get_parser, 0, 'spthy')
+  if parser_ok and parser then
+    local lang_ok, lang = pcall(function() return parser:lang() end)
+    if lang_ok and lang == 'spthy' then
+      lang_registered = true
+      log("Language registration method 3: SUCCESS")
+    end
+  end
+end
+
 log("Language 'spthy' registered: " .. tostring(lang_registered))
 
 -- STEP 9: Check parser
@@ -114,15 +142,23 @@ log("External scanner present: " .. tostring(scanner_present))
 -- STEP 11: Check highlighter
 log("Checking highlighter...")
 local has_highlighter = false
-if vim.treesitter and vim.treesitter.highlighter and vim.treesitter.highlighter.active then
-  has_highlighter = vim.treesitter.highlighter.active[0] ~= nil
-end
+pcall(function()
+  has_highlighter = vim.treesitter.highlighter and 
+                   vim.treesitter.highlighter.active and 
+                   vim.treesitter.highlighter.active[0] ~= nil
+end)
 log("Active highlighter: " .. tostring(has_highlighter))
-log("Buffer highlighter object: " .. tostring(vim.b[0].tamarin_ts_highlighter ~= nil))
+
+local has_buffer_highlighter = false
+pcall(function()
+  has_buffer_highlighter = vim.b[0].tamarin_ts_highlighter ~= nil
+end)
+log("Buffer highlighter object: " .. tostring(has_buffer_highlighter))
 
 -- STEP 12: Check for apostrophe variables
 log("Testing apostrophe variable handling...")
--- We don't have a way to directly check this in headless mode, but we can check if the parser works
+-- We don't have a way to directly check this in headless mode, 
+-- but we can check if the parser works
 local parser_works = false
 if vim.treesitter and vim.treesitter.get_parser then
   local ok, parser = pcall(vim.treesitter.get_parser, 0, 'spthy')

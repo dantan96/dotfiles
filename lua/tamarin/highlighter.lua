@@ -15,10 +15,15 @@ local function log(message, level)
   end
 end
 
--- Safely call a function with pcall
+-- Safely call a function with proper error handling
 local function safe_call(fn, ...)
-  local status, result = pcall(fn, ...)
-  return status, result
+  local status, result
+  status, result = pcall(fn, ...)
+  if not status then
+    log("Error: " .. tostring(result), vim.log.levels.ERROR)
+    return false, nil
+  end
+  return true, result
 end
 
 -- Set up TreeSitter highlighting for a buffer
@@ -37,22 +42,33 @@ function M.setup_highlighting(bufnr)
     return false
   end
   
-  -- Get parser
-  local parser_ok, parser = safe_call(vim.treesitter.get_parser, bufnr, 'spthy')
+  -- Safely get parser with a wrapped function
+  local parser
+  local parser_ok = pcall(function()
+    parser = vim.treesitter.get_parser(bufnr, 'spthy')
+  end)
+  
   if not parser_ok or not parser then
-    log("Failed to get parser: " .. tostring(parser), vim.log.levels.WARN)
+    log("Failed to get parser", vim.log.levels.WARN)
     return false
   end
   
-  -- Create highlighter
-  local highlighter_ok, highlighter = safe_call(vim.treesitter.highlighter.new, parser)
+  -- Safely create highlighter with a wrapped function
+  local highlighter
+  local highlighter_ok = pcall(function()
+    highlighter = vim.treesitter.highlighter.new(parser)
+  end)
+  
   if not highlighter_ok or not highlighter then
-    log("Failed to create highlighter: " .. tostring(highlighter), vim.log.levels.WARN)
+    log("Failed to create highlighter", vim.log.levels.WARN)
     return false
   end
   
   -- Store in buffer-local variable to prevent garbage collection
-  vim.b[bufnr].tamarin_ts_highlighter = highlighter
+  -- Use pcall to prevent conversion errors
+  pcall(function()
+    vim.b[bufnr].tamarin_ts_highlighter = highlighter
+  end)
   
   log("Highlighting set up for buffer " .. bufnr)
   return true
@@ -69,8 +85,9 @@ function M.setup_fallback(bufnr)
   end
   
   -- Enable regular syntax highlighting
-  local cmd = string.format("syntax enable", bufnr)
-  vim.cmd(cmd)
+  pcall(function()
+    vim.cmd("syntax enable")
+  end)
   
   log("Fallback syntax highlighting enabled", vim.log.levels.INFO)
   return true
@@ -124,9 +141,12 @@ function M.test_query_files(bufnr)
     local success = M.setup_highlighting(bufnr)
     
     -- Check if highlighting is active
-    local is_active = vim.treesitter.highlighter and 
-                     vim.treesitter.highlighter.active and 
-                     vim.treesitter.highlighter.active[bufnr] ~= nil
+    local is_active = false
+    pcall(function()
+      is_active = vim.treesitter.highlighter and 
+                 vim.treesitter.highlighter.active and 
+                 vim.treesitter.highlighter.active[bufnr] ~= nil
+    end)
     
     results[name] = {
       success = success,
@@ -160,9 +180,12 @@ function M.test_gc(bufnr)
   collectgarbage("collect")
   
   -- Check if highlighting is still active
-  local with_gc_active = vim.treesitter.highlighter and 
-                        vim.treesitter.highlighter.active and 
-                        vim.treesitter.highlighter.active[bufnr] ~= nil
+  local with_gc_active = false
+  pcall(function()
+    with_gc_active = vim.treesitter.highlighter and 
+                    vim.treesitter.highlighter.active and 
+                    vim.treesitter.highlighter.active[bufnr] ~= nil
+  end)
   
   log("  Setup: " .. (with_gc_ok and "SUCCESS" or "FAILED"))
   log("  Active after GC: " .. (with_gc_active and "YES" or "NO"))
