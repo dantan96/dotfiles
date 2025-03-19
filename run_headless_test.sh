@@ -135,30 +135,35 @@ if [ -f "$LOG_FILE" ]; then
   echo "Highlighter active: $HIGHLIGHTER_ACTIVE"
   echo "Apostrophe variables handled: $APOSTROPHE_HANDLED"
   
-  # Create summary file for updating hypothesis database
+  # Create summary file with proper handling of variables
+  SCANNER_ADVICE="reconsider our approach to the external scanner"
+  if [ "$SCANNER_PRESENT" = "true" ]; then
+    SCANNER_ADVICE="continue to use the external scanner approach"
+  fi
+  
   cat > test_summary.md << EOF
 ## Headless Neovim Testing Results
 
 From headless testing with Neovim, we have the following evidence:
 
-- Module loading: ${MODULE_LOADED}
-- Setup success: ${SETUP_OK}
-- Language registration: ${LANG_REGISTERED}
-- Parser loading: ${PARSER_LOADED}
-- External scanner present: ${SCANNER_PRESENT}
-- Highlighter activation: ${HIGHLIGHTER_ACTIVE}
-- Apostrophe variables handled: ${APOSTROPHE_HANDLED}
+- Module loading: $MODULE_LOADED
+- Setup success: $SETUP_OK
+- Language registration: $LANG_REGISTERED
+- Parser loading: $PARSER_LOADED
+- External scanner present: $SCANNER_PRESENT
+- Highlighter activation: $HIGHLIGHTER_ACTIVE
+- Apostrophe variables handled: $APOSTROPHE_HANDLED
 
 This evidence supports or updates the following hypotheses:
 
-- H1 (TreeSitter parser loading): ${PARSER_LOADED}
-- H3 (Parser exports _tree_sitter_spthy): ${PARSER_LOADED}
-- H5 (Language to filetype mapping): ${LANG_REGISTERED}
-- H8 (Redundant code simplification): ${SETUP_OK}
-- H14 (External scanner for apostrophes): ${SCANNER_PRESENT} and ${APOSTROPHE_HANDLED}
-- H16 (GC prevention): ${HIGHLIGHTER_ACTIVE}
+- H1 (TreeSitter parser loading): $PARSER_LOADED
+- H3 (Parser exports _tree_sitter_spthy): $PARSER_LOADED
+- H5 (Language to filetype mapping): $LANG_REGISTERED
+- H8 (Redundant code simplification): $SETUP_OK
+- H14 (External scanner for apostrophes): $SCANNER_PRESENT and $APOSTROPHE_HANDLED
+- H16 (GC prevention): $HIGHLIGHTER_ACTIVE
 
-Based on these results, we should ${SCANNER_PRESENT == "true" ? "continue to use the external scanner approach" : "reconsider our approach to the external scanner"}.
+Based on these results, we should $SCANNER_ADVICE.
 EOF
 
   echo "Test summary created in test_summary.md"
