@@ -20,6 +20,14 @@ vim.opt.runtimepath:append(vim.fn.stdpath('config') .. '/parser')
 vim.opt.runtimepath:append(vim.fn.stdpath('config') .. '/parser/spthy')
 vim.opt.runtimepath:append(vim.fn.stdpath('config') .. '/queries')
 
+-- Set up filetype detection for Tamarin files - do this as early as possible
+vim.filetype.add({
+  extension = {
+    spthy = "tamarin",
+    sapic = "tamarin"
+  },
+})
+
 -- Suppress errors from the treesitter module
 vim.schedule(function()
   local old_require = require
@@ -54,7 +62,13 @@ vim.schedule(function()
 end)
 
 -- Use our new tamarin module instead of the old setup
-require("tamarin").setup()
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "tamarin",
+  callback = function()
+    require("tamarin").setup()
+  end,
+  once = true,
+})
 
 -- Restore normal notification after initialization
 vim.defer_fn(function()
