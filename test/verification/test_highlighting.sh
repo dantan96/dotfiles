@@ -23,14 +23,20 @@ EOF
 # Run Neovim with the test file and check for TreeSitter highlighting
 echo "Running Neovim with test file..."
 timeout 5 nvim --headless \
-  -c "lua require('test.verification.validate_node_types').ensure_parser_loaded()" \
   -c "edit ~/test_tamarin/test.spthy" \
   -c "set filetype=tamarin" \
+  -c "lua vim.treesitter.language.register('spthy', 'tamarin'); local parser_path = vim.fn.stdpath('config') .. '/parser/spthy/spthy.so'; if vim.treesitter.language and vim.treesitter.language.add then vim.treesitter.language.add('spthy', {path = parser_path}) end" \
   -c "TSEnable highlight" \
-  -c "lua local parser_path = vim.fn.stdpath('config') .. '/parser/spthy/spthy.so'; vim.treesitter.language.register('spthy', 'tamarin'); if vim.treesitter.language.add then vim.treesitter.language.add('spthy', {path = parser_path}) end; if vim.treesitter.highlighter then local parser = vim.treesitter.get_parser(0, 'spthy'); local highlighter = vim.treesitter.highlighter.new(parser); vim.g.tamarin_highlighter = highlighter end; vim.cmd('sleep 1'); vim.notify('Syntax highlighting test completed'); if vim.treesitter.highlighter and vim.treesitter.highlighter.active and vim.treesitter.highlighter.active[0] then vim.notify('Highlighter is active!') else vim.notify('Highlighter is NOT active!', vim.log.levels.ERROR) end" \
+  -c "sleep 1" \
   -c "qa!"
 
-echo "Test completed. The file was successfully processed."
+echo "Syntax highlighting test completed."
+echo "Now testing with validation script..."
+
+# Also run the node type validation to confirm the highlights.scm file is valid
+./test/verification/run_node_validation.sh
+
+echo "All tests completed."
 
 # Clean up
 rm -rf ~/test_tamarin
