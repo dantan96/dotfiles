@@ -8,6 +8,7 @@
   "end"
   "rule"
   "lemma"
+  "exists-trace"
 ] @keyword
 
 ;; Identifiers - using the ident node type with text predicates for differentiation
@@ -44,7 +45,6 @@
 ["[" "]"] @punctuation.delimiter
 
 ;; Trace elements
-(exists-trace) @keyword.quantifier
 (trace_quantifier) @keyword.quantifier
 
 ;; Error nodes for debugging
