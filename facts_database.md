@@ -42,32 +42,56 @@
     - **Source**: TreeSitter API documentation
     - **Relevance**: The Tamarin parser needs to be explicitly registered and mapped to the `tamarin` filetype.
 
+11. **F17**: Both Tamarin/Spthy parser files have external scanner functions defined.
+    - **Source**: Symbol inspection of parser files
+    - **Relevance**: The external scanner might already be designed to handle variables with apostrophes, but might not be properly registered or utilized.
+
+12. **F18**: Simple TreeSitter predicates with single-character patterns avoid stack overflow issues.
+    - **Source**: Implementation and testing of various query files
+    - **Relevance**: Using predicates like `(#match? @variable "^[a-z]")` provides a reliable way to match variables without complex regex.
+
+13. **F19**: Modular organization of TreeSitter integration code improves maintainability.
+    - **Source**: Implementation experience
+    - **Relevance**: Separating parser loading, highlighting, and diagnostics into distinct modules makes the code easier to understand and maintain.
+
+14. **F20**: Explicit registration of the parser path helps ensure the parser is properly loaded.
+    - **Source**: Implementation testing with `vim.treesitter.language.add` function
+    - **Relevance**: Using the `vim.treesitter.language.add` function with an explicit path ensures the parser is found and loaded correctly.
+
 ## Neovim-Specific Facts
 
-11. **F11**: Neovim's regex engine uses a Non-deterministic Finite Automaton (NFA) that can overflow its stack with complex patterns.
+15. **F11**: Neovim's regex engine uses a Non-deterministic Finite Automaton (NFA) that can overflow its stack with complex patterns.
     - **Source**: Error message analysis and Neovim documentation
     - **Relevance**: The error message "couldn't parse regex: Vim:E874: (NFA) Could not pop the stack!" indicates a stack overflow in the regex engine.
 
-12. **F12**: Neovim's TreeSitter implementation requires proper language registration.
+16. **F12**: Neovim's TreeSitter implementation requires proper language registration.
     - **Source**: Neovim API documentation
     - **Relevance**: The parser must be registered using `vim.treesitter.language.register` to establish the language-to-filetype mapping.
 
-13. **F13**: Neovim's TreeSitter highlighter requires buffer-specific setup.
+17. **F13**: Neovim's TreeSitter highlighter requires buffer-specific setup.
     - **Source**: Neovim API documentation
     - **Relevance**: Highlighters should be created for each buffer using `vim.treesitter.highlighter.new` and stored in buffer-local variables.
 
-14. **F14**: Neovim allows fallback to traditional syntax highlighting when TreeSitter fails.
+18. **F14**: Neovim allows fallback to traditional syntax highlighting when TreeSitter fails.
     - **Source**: Neovim configuration analysis
     - **Relevance**: A fallback mechanism can be implemented to ensure that some form of syntax highlighting is always available.
 
+19. **F21**: Proper error handling with pcall is essential for robust Neovim plugins.
+    - **Source**: Implementation experience
+    - **Relevance**: Using pcall to safely call functions prevents errors from breaking the entire plugin.
+
 ## Tamarin-Specific Facts
 
-15. **F15**: The Tamarin protocol language uses apostrophes in variable names.
+20. **F15**: The Tamarin protocol language uses apostrophes in variable names.
     - **Source**: Analysis of Tamarin source files
     - **Relevance**: Variable names like `x'` are common in Tamarin, and their regex patterns need careful handling.
 
-16. **F16**: The Tamarin parser and query files are located in multiple directories with inconsistent naming.
+21. **F16**: The Tamarin parser and query files are located in multiple directories with inconsistent naming.
     - **Source**: Directory structure analysis
     - **Relevance**: Standardizing on a consistent directory structure and naming convention is essential for reliable parser loading.
+
+22. **F22**: Using simplified highlighting patterns works effectively for Tamarin files.
+    - **Source**: Implementation and testing
+    - **Relevance**: Even with simplified highlighting patterns that don't capture every language construct, the result is still usable and stable.
 
 
