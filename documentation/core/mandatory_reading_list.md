@@ -20,8 +20,8 @@ This document tracks the reading progress of TreeSitter documentation files. No 
 | documentation/treesitter/Generate CLI Documentation.md | [ ] | [ ] |
 | documentation/treesitter/Getting Started (1).md | [ ] | [ ] |
 | documentation/treesitter/Getting Started.md | [ ] | [ ] |
-| documentation/treesitter/Grammar DSL.md | [ ] | [ ] |
-| documentation/treesitter/Highlight Documentation.md | [ ] | [ ] |
+| documentation/treesitter/Grammar DSL.md | [x] | [ ] |
+| documentation/treesitter/Highlight Documentation.md | [x] | [ ] |
 | documentation/treesitter/Init Config.md | [ ] | [ ] |
 | documentation/treesitter/Parse Documentation.md | [ ] | [ ] |
 | documentation/treesitter/Predicates and Directives.md | [x] | [ ] |
@@ -37,11 +37,11 @@ This document tracks the reading progress of TreeSitter documentation files. No 
 | documentation/treesitter/Using Parsers Syntax.md | [ ] | [ ] |
 | documentation/treesitter/Walking Trees.md | [ ] | [ ] |
 | documentation/treesitter/Writing Tests.md | [ ] | [ ] |
-| documentation/treesitter/Writing the Grammar.md | [ ] | [ ] |
-| documentation/treesitter/highly_relevant_information_for_our_final_attempt.md | [ ] | [ ] |
+| documentation/treesitter/Writing the Grammar.md | [x] | [ ] |
+| documentation/treesitter/highly_relevant_information_for_our_final_attempt.md | [x] | [ ] |
 | documentation/treesitter/hypotheses_treesitter_fallback.md | [ ] | [ ] |
 | documentation/treesitter/manually_adding_a_treesitter_parser_a_guide.md | [ ] | [ ] |
-| documentation/treesitter/simplifying_the_config.md | [ ] | [ ] |
+| documentation/treesitter/simplifying_the_config.md | [x] | [ ] |
 | documentation/treesitter/syntax_highlighting_a_thorough_complete_plan_to_fix_forever_no_matter_what.md | [ ] | [ ] |
 | documentation/treesitter/treesitter_documentation_analysis.md | [ ] | [ ] |
 | test/h14_external_scanner_test.md | [x] | [ ] |
@@ -51,9 +51,9 @@ This document tracks the reading progress of TreeSitter documentation files. No 
 | test/treesitter_regex_test_plan.md | [ ] | [ ] |
 
 ## Reading Progress
-- Files partially read: 14/46
+- Files partially read: 19/46
 - Files completely read: 0/46
-- Progress: 30%
+- Progress: 41%
 
 ## Notes
 - Files will be marked as "partially read" when they've been skimmed for key information
@@ -110,6 +110,36 @@ This document tracks the reading progress of TreeSitter documentation files. No 
 - Implemented as C functions with specific naming conventions
 - The scanner needs to handle creation, destruction, serialization, and deserialization
 - The `scan` function is the core of the external scanner that recognizes tokens
+
+### Grammar DSL (Grammar DSL.md)
+- Provides a powerful language for defining context-free grammars
+- Offers various operators for common patterns (repetition, alternatives, etc.)
+- Includes precedence and associativity control for resolving ambiguities
+- Supports aliases, field names, and external tokens
+
+### Highlight Documentation (Highlight Documentation.md)
+- CLI tool for running syntax highlighting on files
+- Can output colored text to terminal or HTML
+- Provides options for checking capture conformance
+- Can use custom query paths for highlighting
+
+### Writing the Grammar (Writing the Grammar.md)
+- Grammar should produce an intuitive tree structure
+- Should adhere closely to LR(1) grammar principles for efficiency
+- Recommends starting with a breadth-first approach to grammar construction
+- Provides guidelines for structuring rules and handling precedence
+
+### Highly Relevant Information (highly_relevant_information_for_our_final_attempt.md)
+- Details the TreeSitter parser loading process in Neovim
+- Explains symbol name handling, especially on macOS (leading underscore)
+- Outlines the syntax highlighting setup requirements
+- Lists common pitfalls and implementation requirements
+
+### Simplifying the Config (simplifying_the_config.md)
+- Proposes simplifying the TreeSitter parser loader implementation
+- Identifies the core issues: symbol name mismatch and language-filetype mismatch
+- Suggests a minimal solution using just `vim.treesitter.language.register()`
+- Provides implementation plans with different robustness levels
 
 ### Test: TreeSitter Predicates with Complex Regex Patterns (h15_predicate_regex_test.md)
 - Complex regex patterns in TreeSitter predicates can cause stack overflows
