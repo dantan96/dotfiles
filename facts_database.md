@@ -58,6 +58,18 @@
     - **Source**: Implementation testing with `vim.treesitter.language.add` function
     - **Relevance**: Using the `vim.treesitter.language.add` function with an explicit path ensures the parser is found and loaded correctly.
 
+23. **F23**: TreeSitter highlighter objects cannot be directly stored in buffer variables due to type conversion issues.
+    - **Source**: Implementation testing with the H18 hypothesis test
+    - **Relevance**: Storing TreeSitter highlighter objects directly in buffer variables causes `E5101: Cannot convert given lua type` errors in some Neovim versions.
+
+24. **F24**: Using a global registry for TreeSitter highlighters avoids type conversion issues.
+    - **Source**: Implementation testing with the H18 hypothesis test
+    - **Relevance**: Storing TreeSitter highlighter objects in a global table (`_G._tamarin_highlighters`) and only storing a reference in buffer variables works reliably.
+
+25. **F25**: TreeSitter implementations should include cleanup mechanisms to prevent memory leaks.
+    - **Source**: Implementation testing and TreeSitter documentation
+    - **Relevance**: Adding autocommands to clean up highlighter objects when buffers are deleted prevents memory leaks while still avoiding garbage collection issues.
+
 ## Neovim-Specific Facts
 
 15. **F11**: Neovim's regex engine uses a Non-deterministic Finite Automaton (NFA) that can overflow its stack with complex patterns.

@@ -26,6 +26,12 @@ local function safe_call(fn, ...)
   return true, result
 end
 
+-- Global storage for highlighters to prevent GC
+-- This avoids buffer-local variable type conversion issues
+if not _G._tamarin_highlighters then
+  _G._tamarin_highlighters = {}
+end
+
 -- Set up TreeSitter highlighting for a buffer
 function M.setup_highlighting(bufnr)
   bufnr = bufnr or 0
@@ -42,12 +48,8 @@ function M.setup_highlighting(bufnr)
     return false
   end
   
-  -- Safely get parser with a wrapped function
-  local parser
-  local parser_ok = pcall(function()
-    parser = vim.treesitter.get_parser(bufnr, 'spthy')
-  end)
-  
+  -- Get parser
+  local parser_ok, parser = pcall(vim.treesitter.get_parser, bufnr, 'spthy')
   if not parser_ok or not parser then
     log("Failed to get parser", vim.log.levels.WARN)
     return false
@@ -64,10 +66,24 @@ function M.setup_highlighting(bufnr)
     return false
   end
   
-  -- Store in buffer-local variable to prevent garbage collection
-  -- Use pcall to prevent conversion errors
+  -- Store in global table to prevent garbage collection
+  -- This avoids the type conversion issues with buffer-local variables
+  _G._tamarin_highlighters[bufnr] = highlighter
+  
+  -- Try to store in buffer-local variable as well, but don't worry if it fails
   pcall(function()
-    vim.b[bufnr].tamarin_ts_highlighter = highlighter
+    -- Store only a reference to the buffer number to avoid type conversion issues
+    vim.b[bufnr].tamarin_ts_highlighter_ref = bufnr
+  end)
+  
+  -- Add autocommand to clean up highlighter when buffer is closed
+  pcall(function()
+    vim.cmd(string.format([[
+      augroup TamarinHighlighter%d
+        autocmd!
+        autocmd BufDelete <buffer=%d> lua if _G._tamarin_highlighters then _G._tamarin_highlighters[%d] = nil end
+      augroup END
+    ]], bufnr, bufnr, bufnr))
   end)
   
   log("Highlighting set up for buffer " .. bufnr)
@@ -166,34 +182,83 @@ function M.test_query_files(bufnr)
   return results
 end
 
--- Test garbage collection
+-- Check if buffer has an active highlighter
+function M.has_active_highlighter(bufnr)
+  bufnr = bufnr or 0
+  
+  -- Check global registry first (our new approach)
+  if _G._tamarin_highlighters and _G._tamarin_highlighters[bufnr] then
+    return true
+  end
+  
+  -- Check traditional methods as well (for backwards compatibility)
+  if vim.b[bufnr].tamarin_ts_highlighter then
+    return true
+  end
+  
+  -- Check if TreeSitter's internal highlighter tracking shows it as active
+  if vim.treesitter and vim.treesitter.highlighter and vim.treesitter.highlighter.active then
+    return vim.treesitter.highlighter.active[bufnr] ~= nil
+  end
+  
+  return false
+end
+
+-- Test garbage collection prevention
 function M.test_gc(bufnr)
   bufnr = bufnr or 0
   
-  log("Testing garbage collection behavior")
+  log("Testing garbage collection prevention...")
   
-  -- Test with GC prevention
-  log("Setting up highlighter with GC prevention")
-  local with_gc_ok = M.setup_highlighting(bufnr)
+  -- First, ensure we have a highlighter
+  local has_highlighter_before = M.has_active_highlighter(bufnr)
   
-  -- Force garbage collection
+  -- Force a garbage collection
   collectgarbage("collect")
   
-  -- Check if highlighting is still active
-  local with_gc_active = false
+  -- Check if highlighter is still active
+  local has_highlighter_after = M.has_active_highlighter(bufnr)
+  
+  -- Report results
+  log("Before GC: " .. tostring(has_highlighter_before))
+  log("After GC: " .. tostring(has_highlighter_after))
+  log("Registry entry: " .. tostring(_G._tamarin_highlighters and _G._tamarin_highlighters[bufnr] ~= nil))
+  
+  return has_highlighter_before and has_highlighter_after
+end
+
+-- Clean up highlighter for buffer
+function M.cleanup_highlighting(bufnr)
+  bufnr = bufnr or 0
+  
+  -- Remove from global registry
+  if _G._tamarin_highlighters and _G._tamarin_highlighters[bufnr] then
+    _G._tamarin_highlighters[bufnr] = nil
+  end
+  
+  -- Clear buffer variable
   pcall(function()
-    with_gc_active = vim.treesitter.highlighter and 
-                    vim.treesitter.highlighter.active and 
-                    vim.treesitter.highlighter.active[bufnr] ~= nil
+    vim.b[bufnr].tamarin_ts_highlighter = nil
+    vim.b[bufnr].tamarin_ts_highlighter_ref = nil
   end)
   
-  log("  Setup: " .. (with_gc_ok and "SUCCESS" or "FAILED"))
-  log("  Active after GC: " .. (with_gc_active and "YES" or "NO"))
+  log("Highlighting cleaned up for buffer " .. bufnr, vim.log.levels.DEBUG)
+  return true
+end
+
+-- Clean up all highlighters
+function M.cleanup_all()
+  if _G._tamarin_highlighters then
+    for bufnr, _ in pairs(_G._tamarin_highlighters) do
+      _G._tamarin_highlighters[bufnr] = nil
+    end
+  end
   
-  return {
-    setup_ok = with_gc_ok,
-    active_after_gc = with_gc_active
-  }
+  -- Reset global table
+  _G._tamarin_highlighters = {}
+  
+  log("All highlighters cleaned up")
+  return true
 end
 
 return M 
