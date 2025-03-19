@@ -15,7 +15,7 @@ This document tracks the reading progress of TreeSitter documentation files. No 
 | documentation/treesitter/Code Navigation.md | [ ] | [ ] |
 | documentation/treesitter/Complete Documentation.md | [ ] | [ ] |
 | documentation/treesitter/Contributing Guide.md | [ ] | [ ] |
-| documentation/treesitter/External Scanners.md | [ ] | [ ] |
+| documentation/treesitter/External Scanners.md | [x] | [ ] |
 | documentation/treesitter/Fuzz Documentation.md | [ ] | [ ] |
 | documentation/treesitter/Generate CLI Documentation.md | [ ] | [ ] |
 | documentation/treesitter/Getting Started (1).md | [ ] | [ ] |
@@ -44,16 +44,16 @@ This document tracks the reading progress of TreeSitter documentation files. No 
 | documentation/treesitter/simplifying_the_config.md | [ ] | [ ] |
 | documentation/treesitter/syntax_highlighting_a_thorough_complete_plan_to_fix_forever_no_matter_what.md | [ ] | [ ] |
 | documentation/treesitter/treesitter_documentation_analysis.md | [ ] | [ ] |
-| test/h14_external_scanner_test.md | [ ] | [ ] |
+| test/h14_external_scanner_test.md | [x] | [ ] |
 | test/h15_predicate_regex_test.md | [x] | [ ] |
-| test/h16_highlighter_gc_test.md | [ ] | [ ] |
+| test/h16_highlighter_gc_test.md | [x] | [ ] |
 | test/treesitter_fix_plan.md | [ ] | [ ] |
 | test/treesitter_regex_test_plan.md | [ ] | [ ] |
 
 ## Reading Progress
-- Files partially read: 11/46
+- Files partially read: 14/46
 - Files completely read: 0/46
-- Progress: 24%
+- Progress: 30%
 
 ## Notes
 - Files will be marked as "partially read" when they've been skimmed for key information
@@ -105,8 +105,26 @@ This document tracks the reading progress of TreeSitter documentation files. No 
 - Captures in the query file are mapped to highlight groups
 - Local variable tracking helps ensure consistent highlighting
 
+### External Scanners (External Scanners.md)
+- Used for tokens that are difficult to describe with regular expressions
+- Implemented as C functions with specific naming conventions
+- The scanner needs to handle creation, destruction, serialization, and deserialization
+- The `scan` function is the core of the external scanner that recognizes tokens
+
 ### Test: TreeSitter Predicates with Complex Regex Patterns (h15_predicate_regex_test.md)
 - Complex regex patterns in TreeSitter predicates can cause stack overflows
 - The Vim regex engine has limitations with certain pattern types
 - Breaking down complex patterns into multiple simpler predicates is more reliable
 - Apostrophes in patterns are particularly problematic for the Tamarin language
+
+### Test: External Scanner for Apostrophe Variables (h14_external_scanner_test.md)
+- External scanners can handle special tokens like variables with apostrophes
+- The implementation requires C programming and specific TreeSitter integration
+- Grammar and query files need to be updated to work with the external scanner
+- This approach may resolve the stack overflow issues with complex regex patterns
+
+### Test: TreeSitter Highlighter Garbage Collection (h16_highlighter_gc_test.md)
+- Highlighter objects must be stored in buffer-local variables to prevent garbage collection
+- Premature garbage collection can cause syntax highlighting to fail
+- Proper storage and reference management is crucial for persistent highlighting
+- GC issues can explain why highlighting sometimes works initially but fails later
