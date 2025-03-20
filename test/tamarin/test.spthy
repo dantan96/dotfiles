@@ -1,0 +1,98 @@
+/*
+ * Test file for validating Tamarin syntax highlighting
+ * This file contains various Tamarin Protocol Prover language constructs
+ * to test both traditional and TreeSitter-based syntax highlighting.
+ */
+
+theory TestHighlighting
+begin
+
+builtins: diffie-hellman, hashing, symmetric-encryption, signing
+
+/* Types and function declarations */
+functions: f/1, g/2, test/3
+equations: f(g(x,y)) = h(<x,y>)
+
+/* Security properties */
+lemma types [sources]:
+  "All m #i. KU(m)@i ==> (Ex #j. KU(m)@j & j < i) | (Ex #j. !KD(m)@j) | (Ex #j. Out(m)@j)"
+
+lemma secrecy_of_key [reuse, use_induction]:
+  "All A B k #i.
+    Secret(k, A, B)@i ==>
+    not (Ex #j. K(k)@j)
+    | (Ex X #r. Reveal(X)@r & Honest(X)@i)"
+
+/* Rule block with annotations, facts and terms */
+rule Register_User:
+  [ Fr(~id), Fr(~ltk) ]
+  --[ OnlyOnce(), Create($A, ~id), LongTermKey($A, ~ltk) ]->
+  [ !User($A, ~id, ~ltk), !Pk($A, pk(~ltk)), Out(pk(~ltk)) ]
+
+rule Setup_Session:
+  let 
+    pubKey = pk(~ltk)
+    sessionKey = ~sk
+  in
+  [ Fr(~sk), !User($A, ~id, ~ltk) ]
+  --[ SessionKey($A, $B, ~sk) ]->
+  [ !Session($A, $B, ~sk), Out(senc(<$A, $B, ~sk>, ~ltk)) ]
+
+rule Compromise_Agent:
+  [ !User($A, ~id, ~ltk) ]
+  --[ Reveal($A) ]->
+  [ Out(~ltk) ]
+
+rule Send_Message:
+  let msg = senc(~data, ~sk) in
+  [ !Session($A, $B, ~sk), Fr(~data) ]
+  --[ Send($A, $B, ~data), Running($A, $B, ~data) ]->
+  [ Out(msg) ]
+
+rule Receive_Message:
+  let data = sdec(msg, ~sk) in
+  [ !Session($A, $B, ~sk), In(msg) ]
+  --[ Recv($B, $A, data), Commit($B, $A, data) ]->
+  [ Out('ACK') ]
+
+/* Multiline rule with more complex expressions */
+rule Complex_Operation:
+  let 
+    x = ~a + ~b * ~c
+    y = ~d ^ (~e * ~f)
+    z = h(x) XOR h(y)
+    result = f(g(z, h(~k)))
+  in
+  [ Fr(~a), Fr(~b), Fr(~c), 
+    Fr(~d), Fr(~e), Fr(~f),
+    Fr(~k) ]
+  --[ ComplexOp(x, y, z, result) ]->
+  [ Out(result) ]
+
+/* SAPIC process expressions */
+process
+  // Variable declarations
+  new ~sk;
+  new ~k;
+  let pubk = pk(~k);
+  insert <'key', 'alice'>, ~k;
+  insert <'pubkey', 'alice'>, pubk;
+  ( (!in(x); if x = 'STOP' then 0 else out(h(x)))
+    | 
+    (!in(c); lookup <'key', $A> as k in
+       out(senc(c, k))
+     else 
+       out('Error'))
+  )
+
+/* Restrictions */
+restriction OnlyOnce:
+  "All #i #j. OnlyOnce()@i & OnlyOnce()@j ==> #i = #j"
+
+restriction Equality:
+  "All x y #i. Eq(x,y)@i ==> x = y"
+
+restriction Honest_agents_behavior:
+  "All A B m #i #j. Send(A,B,m)@i & Recv(B,A,m)@j ==> #i < #j"
+
+end 
