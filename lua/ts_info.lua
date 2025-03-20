@@ -57,9 +57,13 @@ end
 function M.show_info()
   local info = M.get_info()
   
+  -- Get buffer name, but escape any special characters
+  local bufname = vim.api.nvim_buf_get_name(0)
+  bufname = bufname:gsub("\n", "\\n"):gsub("\r", "\\r")
+  
   -- Format the information
   local lines = {
-    "TreeSitter Status for Buffer: " .. vim.api.nvim_buf_get_name(0),
+    "TreeSitter Status for Current Buffer",
     "───────────────────────────────────────────────────────",
     "• TreeSitter active: " .. (info.active and "Yes ✓" or "No ✗"),
     "• Language: " .. info.language,
