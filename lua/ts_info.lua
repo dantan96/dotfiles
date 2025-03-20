@@ -87,7 +87,20 @@ function M.show_info()
     table.insert(lines, "")
     table.insert(lines, "TreeSitter Node at Cursor:")
     table.insert(lines, "  - Type: " .. info.node_at_cursor:type())
-    table.insert(lines, "  - Text: '" .. vim.treesitter.get_node_text(info.node_at_cursor, 0) .. "'")
+    
+    -- Get node text and escape any newlines
+    local node_text = vim.treesitter.get_node_text(info.node_at_cursor, 0)
+    if node_text then
+      -- Escape newlines and limit length
+      node_text = node_text:gsub("\n", "\\n"):gsub("\r", "\\r")
+      -- Truncate if too long
+      if #node_text > 50 then
+        node_text = node_text:sub(1, 47) .. "..."
+      end
+      table.insert(lines, "  - Text: '" .. node_text .. "'")
+    else
+      table.insert(lines, "  - Text: <none>")
+    end
   end
   
   -- Create a scratch buffer
