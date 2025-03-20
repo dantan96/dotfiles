@@ -8,6 +8,22 @@ end
 
 log("=== Testing Spthy Setup ===")
 
+-- First add parser directory to runtimepath (same as in spthy_setup.lua)
+local parser_path = vim.fn.stdpath("config") .. "/parser"
+local rtp = vim.opt.runtimepath:get()
+local in_rtp = false
+for _, path in ipairs(rtp) do
+  if path == parser_path then
+    in_rtp = true
+    break
+  end
+end
+
+if not in_rtp then
+  vim.opt.runtimepath:prepend(parser_path)
+  log("Added parser directory to runtimepath")
+end
+
 -- 1. Check if spthy parser is available
 local has_parser, parser_info = pcall(vim.treesitter.language.inspect, "spthy")
 log("Parser available: " .. tostring(has_parser))
@@ -28,10 +44,17 @@ end
 
 -- 3. Check runtime paths
 log("\nChecking runtimepath for parser directory:")
-local runtime_paths = vim.api.nvim_get_option('runtimepath')
-local parser_path = vim.fn.stdpath("config") .. "/parser"
-if runtime_paths:find(parser_path, 1, true) then
-  log("Parser directory is in runtimepath")
+local runtime_paths = vim.opt.runtimepath:get()
+local found_parser_path = false
+for _, path in ipairs(runtime_paths) do
+  if path == parser_path then
+    found_parser_path = true
+    break
+  end
+end
+
+if found_parser_path then
+  log("Parser directory is in runtimepath ✓")
 else
   log("ERROR: Parser directory not in runtimepath")
 end
@@ -39,18 +62,24 @@ end
 -- 4. Check if parser files exist
 log("\nChecking parser files:")
 local site_parser = vim.fn.stdpath('data') .. '/site/parser/spthy.so'
-local config_parser = vim.fn.stdpath('config') .. '/parser/spthy.so'
+local config_parser = parser_path .. '/spthy.so'
 
 if vim.fn.filereadable(site_parser) == 1 then
-  log("Parser found at: " .. site_parser)
+  log("Parser found at: " .. site_parser .. " ✓")
 else
   log("Parser NOT found at: " .. site_parser)
 end
 
 if vim.fn.filereadable(config_parser) == 1 then
-  log("Parser found at: " .. config_parser)
+  log("Parser found at: " .. config_parser .. " ✓")
 else
   log("Parser NOT found at: " .. config_parser)
+end
+
+-- Register language (similar to spthy_setup.lua)
+if vim.treesitter and vim.treesitter.language then
+  vim.treesitter.language.register('spthy', 'spthy')
+  log("Registered 'spthy' with TreeSitter language")
 end
 
 -- 5. Check if we can load a sample file
@@ -66,11 +95,17 @@ if vim.fn.filereadable(test_file) == 1 then
   
   log("Buffer loaded with filetype: " .. vim.bo[bufnr].filetype)
   
+  -- Load color scheme
+  pcall(function()
+    require("config.tamarin-colors").setup()
+    log("Loaded tamarin-colors")
+  end)
+  
   -- Try to enable TreeSitter manually
   log("Trying to enable TreeSitter manually:")
   
   local ts_ok = pcall(function()
-    if vim.treesitter.start then
+    if vim.treesitter and vim.treesitter.start then
       vim.treesitter.start(bufnr, "spthy")
       log("  - vim.treesitter.start() called successfully")
     else
