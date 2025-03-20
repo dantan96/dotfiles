@@ -11,6 +11,7 @@ local function init_log_file()
     f:write("Tamarin Initialization Log\n")
     f:write("==========================\n\n")
     f:write("Time: " .. os.date("%Y-%m-%d %H:%M:%S") .. "\n\n")
+    f:write("Starting Neovim initialization\n")
     f:close()
     return true
   end
@@ -32,7 +33,6 @@ end
 
 -- Initialize log
 init_log_file()
-log("Starting Neovim initialization")
 
 -- Set up filetype detection for Tamarin files - do this as early as possible
 vim.filetype.add({
@@ -49,15 +49,6 @@ pcall(function()
   local parser_path = vim.fn.stdpath("config") .. "/parser"
   vim.opt.runtimepath:append(parser_path)
 
-  -- Create symlink to the parser if needed
-  local site_parser = vim.fn.stdpath('data') .. '/site/parser/spthy.so'
-  local config_parser = parser_path .. '/spthy.so'
-  
-  if vim.fn.filereadable(site_parser) == 1 and vim.fn.filereadable(config_parser) == 0 then
-    os.execute("ln -sf " .. vim.fn.shellescape(site_parser) .. " " .. vim.fn.shellescape(config_parser))
-    log("Created symlink to spthy.so parser")
-  end
-
   -- If TreeSitter is available, directly register the language
   if vim.treesitter and vim.treesitter.language then
     vim.treesitter.language.register('spthy', 'spthy')
@@ -65,12 +56,9 @@ pcall(function()
   end
 end)
 
--- Load the simplified Tamarin setup with proper fallback
+-- Apply spthy colors
 pcall(function()
-  log("Loading Tamarin setup module")
-  local tamarin_setup = require('config.tamarin_setup')
-  tamarin_setup.setup({silent = true})
-  log("Tamarin setup complete")
+  require('config.tamarin-colors').setup()
 end)
 
 -- Load lazy.nvim plugin manager
