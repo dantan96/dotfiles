@@ -15,14 +15,35 @@ if not vim.tbl_contains(vim.opt.runtimepath:get(), tamarin_queries_path) then
     vim.opt.runtimepath:append(tamarin_queries_path)
 end
 
--- The parser loading has been moved to init.lua to avoid startup errors
--- This ftplugin now only handles filetype-specific settings
+-- Check if TreeSitter is active for this buffer
+local ts_active = false
+pcall(function()
+    ts_active = vim.treesitter.highlighter.active[vim.api.nvim_get_current_buf()] ~= nil
+end)
 
--- Enable syntax highlighting when TreeSitter is not available
+-- Log info to the Tamarin debug log
+local function log_debug(msg)
+    local log_file = vim.fn.stdpath("cache") .. "/tamarin_init.log"
+    local f = io.open(log_file, "a")
+    if f then
+        f:write(os.date("%H:%M:%S") .. " - [ftplugin] " .. msg .. "\n")
+        f:close()
+    end
+end
+
+log_debug("Loading ftplugin for buffer " .. vim.api.nvim_get_current_buf())
+log_debug("TreeSitter active: " .. tostring(ts_active))
+
+-- Force enable syntax highlighting regardless of TreeSitter
 vim.cmd("syntax enable")
 
--- Traditional syntax highlighting as fallback
-if not vim.g.tamarin_treesitter_initialized then
+-- Apply traditional syntax highlighting when needed
+if not ts_active then
+    log_debug("Using traditional syntax highlighting")
+    
+    -- Hack: Set a global flag to indicate we're providing fallback highlighting
+    vim.g.tamarin_using_fallback = true
+    
     vim.cmd([[
         " Keywords
         syntax keyword tamarinKeyword theory begin end rule lemma restriction functions builtins let in tactic process
@@ -108,11 +129,32 @@ if not vim.g.tamarin_treesitter_initialized then
         syntax match tamarinExponentiation /\^/
         highlight tamarinExponentiation ctermfg=141 guifg=#AA88FF
     ]])
+    
+    -- Apply custom colors from config.tamarin-highlights if available
+    pcall(function()
+        log_debug("Applying custom syntax colors from tamarin-colors")
+        require('config.tamarin-colors').setup()
+    end)
+else
+    log_debug("Using TreeSitter syntax highlighting")
+    -- Make sure TreeSitter colors are applied
+    pcall(function()
+        require('config.tamarin-colors').setup()
+    end)
 end
 
 -- Add a debug command
 vim.api.nvim_buf_create_user_command(0, "TamarinHighlightInfo", function()
     print("Tamarin Syntax Highlighting Information:")
+    
+    -- Check if TreeSitter is active now (might have changed)
+    local has_ts = false
+    pcall(function()
+        has_ts = vim.treesitter.highlighter.active[vim.api.nvim_get_current_buf()] ~= nil
+    end)
+    
+    print("TreeSitter highlighting active: " .. tostring(has_ts))
+    print("Fallback syntax highlighting active: " .. tostring(vim.g.tamarin_using_fallback or false))
     
     -- Try to get the parser
     local parser_ok, parser = pcall(function() 
@@ -159,10 +201,13 @@ vim.api.nvim_buf_create_user_command(0, "TamarinHighlightInfo", function()
         end)
     end
     
-    -- Enable debug mode for future operations
+    -- Enable debug mode and run debugger if available
     vim.g.tamarin_highlight_debug = true
     print("\nDebug mode enabled. Reload buffer to see highlight application messages.")
+    print("\nRun :TamarinDebug for a full highlighting analysis.")
 end, {})
+
+log_debug("Tamarin ftplugin loaded successfully")
 
 -- Print welcome message only in normal mode
 if not vim.g.tamarin_loaded and not vim.g.headless then
