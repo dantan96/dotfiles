@@ -43,6 +43,28 @@ vim.filetype.add({
 })
 log("Registered Tamarin filetype")
 
+-- Explicitly register spthy TreeSitter parser (before plugins are loaded)
+pcall(function()
+  -- Add parser directory to the runtime path
+  local parser_path = vim.fn.stdpath("config") .. "/parser"
+  vim.opt.runtimepath:append(parser_path)
+
+  -- Create symlink to the parser if needed
+  local site_parser = vim.fn.stdpath('data') .. '/site/parser/spthy.so'
+  local config_parser = parser_path .. '/spthy.so'
+  
+  if vim.fn.filereadable(site_parser) == 1 and vim.fn.filereadable(config_parser) == 0 then
+    os.execute("ln -sf " .. vim.fn.shellescape(site_parser) .. " " .. vim.fn.shellescape(config_parser))
+    log("Created symlink to spthy.so parser")
+  end
+
+  -- If TreeSitter is available, directly register the language
+  if vim.treesitter and vim.treesitter.language then
+    vim.treesitter.language.register('spthy', 'spthy')
+    log("Directly registered spthy parser with TreeSitter")
+  end
+end)
+
 -- Load the simplified Tamarin setup with proper fallback
 pcall(function()
   log("Loading Tamarin setup module")

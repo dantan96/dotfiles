@@ -69,15 +69,22 @@ return {
     -- Register the spthy parser if it exists
     local spthy_parser_path = parser_path .. "/spthy.so"
     if vim.fn.filereadable(spthy_parser_path) == 1 then
-      local parser_ok, err = pcall(vim.treesitter.language.add, 'spthy', {
-        path = spthy_parser_path
-      })
-      if not parser_ok then
-        vim.notify("Failed to load Spthy parser: " .. tostring(err), vim.log.levels.ERROR)
-      else
-        -- Associate filetypes with the parser
-        vim.treesitter.language.register('spthy', { 'spthy', 'sapic' })
-      end
+      -- Direct language registration 
+      pcall(function()
+        vim.treesitter.language.register('spthy', 'spthy')
+      end)
+      
+      -- Also add the parser for spthy
+      pcall(function()
+        vim.treesitter.language.add('spthy', {
+          path = spthy_parser_path
+        })
+      end)
+      
+      -- Ensure the parser can be loaded
+      pcall(function()
+        vim.treesitter.language.require_language("spthy")
+      end)
     end
   end,
 }
