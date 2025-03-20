@@ -5,15 +5,25 @@ vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
     -- Set filetype to tamarin
     vim.api.nvim_set_option_value("filetype", "tamarin", {buf = args.buf})
     
-    -- Enable TreeSitter if available
-    if pcall(require, "nvim-treesitter") then
-      -- Try to use the spthy parser
-      if pcall(vim.treesitter.language.inspect, "spthy") then
-        -- Set the parser explicitly for this buffer
-        pcall(function()
-          vim.treesitter.start(args.buf, "spthy")
-        end)
+    -- Create filetype-to-parser mapping for TreeSitter
+    local parsers = require("nvim-treesitter.parsers")
+    if parsers then
+      -- Register 'tamarin' filetype to use 'spthy' parser
+      if not parsers.get_parser_configs().tamarin then
+        parsers.get_parser_configs().tamarin = {
+          install_info = {
+            url = "none", -- No installation required, using spthy directly
+            files = {},
+          },
+          -- This is the key part - map tamarin filetype to spthy parser
+          used_by = { "tamarin" },
+        }
       end
+      
+      -- Attempt to start TreeSitter with the 'spthy' parser for tamarin files
+      pcall(function()
+        vim.treesitter.start(args.buf, "spthy")
+      end)
     end
   end
 }) 
