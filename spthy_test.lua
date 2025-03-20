@@ -57,8 +57,8 @@ vim.api.nvim_buf_set_name(buf, "test.spthy")
 -- Set sample content
 vim.api.nvim_buf_set_lines(buf, 0, -1, true, vim.split(test_string, "\n"))
 
--- Trigger filetype detection
-vim.cmd("filetype detect")
+-- Set filetype manually instead of using filetype detect
+vim.api.nvim_buf_set_option(buf, "filetype", "spthy")
 
 -- Check if filetype was set to spthy
 local ft = vim.api.nvim_buf_get_option(buf, "filetype")

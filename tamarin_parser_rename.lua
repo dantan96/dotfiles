@@ -40,7 +40,7 @@ local function log(msg, level)
   end
 end
 
--- Wrapper for running shell commands
+-- Execute shell command and return output
 local function execute_command(cmd)
   log("Running: " .. cmd, "cmd")
   local handle = io.popen(cmd .. " 2>&1")
@@ -63,6 +63,37 @@ end
 local function command_exists(cmd)
   local result = execute_command("which " .. cmd .. " 2>/dev/null")
   return result and result:match("/%w+$") ~= nil
+end
+
+-- Check for objcopy tool in Mac homebrew location
+local function find_objcopy()
+  local objcopy_cmd = nil
+  
+  -- First try regular paths
+  if command_exists("objcopy") then
+    objcopy_cmd = "objcopy"
+  elseif command_exists("gobjcopy") then
+    objcopy_cmd = "gobjcopy"
+  end
+  
+  -- Then check homebrew path directly
+  if not objcopy_cmd and vim.fn.has("macunix") == 1 then
+    local mac_paths = {
+      "/usr/local/opt/binutils/bin/gobjcopy",
+      "/opt/homebrew/bin/gobjcopy",
+      "/usr/local/bin/gobjcopy"
+    }
+    
+    for _, path in ipairs(mac_paths) do
+      if file_exists(path) then
+        log("Found gobjcopy at " .. path, "success")
+        objcopy_cmd = path
+        break
+      end
+    end
+  end
+  
+  return objcopy_cmd
 end
 
 -- Get OS information
@@ -89,13 +120,7 @@ local function rename_parser_symbol()
   log("Detected OS: " .. os_info.name, "info")
   
   -- 1. Check if required tools are available
-  local objcopy_cmd = nil
-  
-  if command_exists("objcopy") then
-    objcopy_cmd = "objcopy"
-  elseif command_exists("gobjcopy") then
-    objcopy_cmd = "gobjcopy"
-  end
+  local objcopy_cmd = find_objcopy()
   
   if not objcopy_cmd then
     log("ERROR: objcopy tool not found", "error")
@@ -138,10 +163,11 @@ local function rename_parser_symbol()
   if not file_exists(spthy_path) and file_exists(config_spthy_path) then
     log("Found spthy.so in config dir, copying to parser dir", "info")
     execute_command("cp " .. config_spthy_path .. " " .. spthy_path)
+    spthy_exists = file_exists(spthy_path)
   end
   
   if not file_exists(spthy_path) then
-    log("ERROR: Spthy parser not found at: " .. spthy_path, "error")
+    log("ERROR: spthy.so parser not found at: " .. spthy_path, "error")
     log("The spthy.so parser needs to be installed first.", "warning")
     return false
   else
