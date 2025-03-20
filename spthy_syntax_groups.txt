@@ -1,0 +1,4 @@
+
+SpecialKey     xxx links to NonText
+EndOfBuffer    xxx guifg=#000000
+TermCursor     xxx guifg=#000000 guibg=#f5e0dc
