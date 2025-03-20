@@ -14,11 +14,14 @@ function M.setup()
     },
   })
   
-  -- 2. Ensure the parser is available and properly registered
+  -- 2. Add parser directory to runtimepath to ensure parser is found
+  local parser_path = vim.fn.stdpath("config") .. "/parser"
+  vim.opt.runtimepath:append(parser_path)
+  
+  -- 3. Ensure the parser is available and properly registered
   pcall(function()
     -- Check if spthy parser exists in site directory
     local parser_dir = vim.fn.stdpath('data') .. '/site/parser'
-    local config_parser_dir = vim.fn.stdpath('config') .. '/parser'
     local spthy_path = parser_dir .. '/spthy.so'
     
     -- Register language with TreeSitter if available
@@ -27,19 +30,25 @@ function M.setup()
     end
   end)
 
-  -- 3. Setup highlights for spthy files
+  -- 4. Setup highlights for spthy files
   vim.api.nvim_create_autocmd("FileType", {
     pattern = "spthy",
     callback = function()
-      -- Apply TreeSitter highlighting if available
-      pcall(function()
-        vim.treesitter.start(0, "spthy")
-        require("config.tamarin-colors").setup()
-      end)
+      -- Make sure tamarin-colors is loaded first
+      require("config.tamarin-colors").setup()
+      
+      -- Explicitly enable TreeSitter for this buffer
+      if vim.fn.exists(':TSBufEnable') == 2 then
+        vim.cmd('TSBufEnable highlight')
+      elseif vim.treesitter and vim.treesitter.start then
+        pcall(function()
+          vim.treesitter.start(0, "spthy")
+        end)
+      end
     end,
   })
   
-  -- 4. Register with nvim-treesitter if it's available
+  -- 5. Register with nvim-treesitter if it's available
   pcall(function()
     local has_parsers, parsers = pcall(require, "nvim-treesitter.parsers")
     if has_parsers and not parsers.get_parser_configs().spthy then
