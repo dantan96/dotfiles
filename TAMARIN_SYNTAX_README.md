@@ -14,15 +14,26 @@ This caused unpredictable behavior where:
 - Sometimes no colors were applied at all
 - Elements were highlighted inconsistently
 - The actual colors didn't match those defined in the `spthy-colorscheme.lua` file
+- The most critical issue was the `Missing equal sign: italic` error when loading the syntax file
 
 ## The Solution
 
 Our solution simplifies and consolidates the syntax highlighting by:
 
-1. **Embedding all color definitions directly** in the ftplugin
-2. **Using direct Vim syntax commands** that work reliably in headless mode
-3. **Eliminating dependency conflicts** between different highlighting systems
-4. **Preventing conflicts** between TreeSitter and traditional syntax highlighting
+1. **Fixing the ftplugin file** to use a self-contained syntax highlighting approach
+2. **Disabling the conflicting syntax file** that was causing errors
+3. **Embedding all color definitions directly** to prevent dependency issues
+4. **Using correct highlight command formats** to prevent the "Missing equal sign" errors
+
+## Quick Fix
+
+If you're still seeing errors when opening .spthy files, use the quick fix:
+
+```bash
+./disable_syntax_file.sh
+```
+
+This will disable the problematic syntax file that conflicts with our ftplugin approach.
 
 ## Files in this Solution
 
