@@ -1,5 +1,0 @@
-/* Test special constant 'g' highlighting */
-rule DHTest:
-  [ Fr(~a) ]
-  -->
-  [ Out('g'^~a) ]

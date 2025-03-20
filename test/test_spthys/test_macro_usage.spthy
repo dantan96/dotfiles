@@ -1,5 +1,0 @@
-/* Test macro usage highlighting */
-let
-  t' = MAC(~k, m)
-  pubkey = PK($A)
-in

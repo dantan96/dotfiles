@@ -1,5 +1,0 @@
-/* Test begin/end keywords */
-theory TestBeginEnd
-begin
-  /* Theory content */
-end

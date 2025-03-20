@@ -1,8 +1,0 @@
-theory Test 
-begin 
-builtins: diffie-hellman 
-rule Example: 
-  [ Fr(~k) ] 
-  --> 
-  [ Out(~k) ] 
-end

@@ -1,5 +1,0 @@
-/* Test tactic keyword highlighting */
-lemma auth_test:
-  "All A B #i. Auth(A, B) @ #i ==> Ex #j. Send(A, B) @ #j & j < i"
-  by sorry
-  simplify
