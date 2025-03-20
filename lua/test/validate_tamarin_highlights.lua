@@ -368,6 +368,233 @@ function M.validate_all_tamarin_queries(auto_fix)
   return all_valid
 end
 
+-- Debug helper
+local function debug_print(msg)
+  if vim.g.tamarin_test_debug then
+    print("[VALIDATION DEBUG] " .. msg)
+  end
+end
+
+-- Get syntax group at cursor position
+local function get_syntax_group_at_cursor()
+  local pos = vim.api.nvim_win_get_cursor(0)
+  local line = pos[1] - 1
+  local col = pos[2]
+  
+  -- Get TreeSitter capture if available
+  local has_ts, ts_highlighter = pcall(function()
+    return vim.treesitter.highlighter.active[vim.api.nvim_get_current_buf()]
+  end)
+  
+  if has_ts and ts_highlighter then
+    debug_print("TreeSitter highlighter is active")
+    local captures = {}
+    ts_highlighter.tree:for_each_tree(function(tree, lang_tree)
+      if not (tree and lang_tree) then return end
+      local query = vim.treesitter.query.get(lang_tree:lang(), "highlights")
+      if not query then return end
+      
+      local iter = query:iter_captures(tree:root(), 0, line, line + 1)
+      for id, node, _ in iter do
+        local range = {node:range()}
+        local start_row, start_col, end_row, end_col = unpack(range)
+        
+        if line == start_row and col >= start_col and col < end_col then
+          local name = query.captures[id]
+          if name then
+            table.insert(captures, "@" .. name)
+          end
+        end
+      end
+    end)
+    
+    if #captures > 0 then
+      return captures[#captures], captures
+    end
+  end
+  
+  -- Fallback to vim syntax ID
+  local synID = vim.fn.synID(line + 1, col + 1, 0)
+  if synID and synID > 0 then
+    local name = vim.fn.synIDattr(synID, "name")
+    local trans_name = vim.fn.synIDattr(vim.fn.synIDtrans(synID), "name")
+    
+    if name ~= trans_name then
+      return name .. " -> " .. trans_name, {name, trans_name}
+    else
+      return name, {name}
+    end
+  end
+  
+  return "None", {}
+end
+
+-- Run test on current buffer
+function M.run()
+  debug_print("Running Tamarin highlight validation")
+  
+  local buf = vim.api.nvim_get_current_buf()
+  local ft = vim.bo[buf].filetype
+  
+  if ft ~= "tamarin" then
+    vim.notify("Current buffer is not a Tamarin file", vim.log.levels.WARN)
+    return false
+  end
+  
+  -- Create a new floating window for results
+  local width = math.min(120, vim.o.columns - 4)
+  local height = math.min(30, vim.o.lines - 4)
+  local row = math.floor((vim.o.lines - height) / 2)
+  local col = math.floor((vim.o.columns - width) / 2)
+  
+  local opts = {
+    relative = "editor",
+    width = width,
+    height = height,
+    row = row,
+    col = col,
+    style = "minimal",
+    border = "rounded"
+  }
+  
+  local buf_result = vim.api.nvim_create_buf(false, true)
+  local win = vim.api.nvim_open_win(buf_result, true, opts)
+  
+  -- Window title
+  vim.api.nvim_buf_set_lines(buf_result, 0, -1, false, {
+    "Tamarin Syntax Highlighting Validation",
+    "=====================================",
+    "",
+    "Press q to close this window",
+    "",
+    "Highlighting Info:",
+    "----------------",
+    "TreeSitter Parser: " .. (vim.treesitter.language.inspect("spthy") and "Available" or "Not Available"),
+    "Fallback Syntax: " .. (vim.g.tamarin_fallback_highlighting and "Enabled" or "Disabled"),
+    "",
+    "Cursor Position Info:",
+    "-------------------"
+  })
+  
+  -- Add help info for interactive mode
+  vim.api.nvim_buf_set_lines(buf_result, -1, -1, false, {
+    "Move cursor in Tamarin buffer to see highlighting information",
+    "Close this window and press <Leader>tt again to update",
+    "",
+    "Current Highlight Groups:"
+  })
+  
+  -- Show active highlight groups
+  local synID = vim.fn.synID(1, 1, 1)
+  local active_groups = {}
+  if synID > 0 then
+    local syntax_groups = vim.fn.getcompletion("", "highlight")
+    for _, group in ipairs(syntax_groups) do
+      if group:match("^Tamarin") or group:match("^@tamarin") or group:match("^@spthy") then
+        table.insert(active_groups, "- " .. group)
+      end
+    end
+  end
+  
+  if #active_groups > 0 then
+    vim.api.nvim_buf_set_lines(buf_result, -1, -1, false, active_groups)
+  else
+    vim.api.nvim_buf_set_lines(buf_result, -1, -1, false, {"No Tamarin-specific highlight groups found"})
+  end
+  
+  -- Set buffer options
+  vim.api.nvim_buf_set_option(buf_result, "modifiable", false)
+  vim.api.nvim_buf_set_option(buf_result, "filetype", "markdown")
+  
+  -- Add keymapping to close the window
+  vim.keymap.set("n", "q", function()
+    vim.api.nvim_win_close(win, true)
+  end, {buffer = buf_result, noremap = true})
+  
+  return true
+end
+
+-- Run interactive test that shows highlights as cursor moves
+function M.run_interactive()
+  debug_print("Running interactive highlight test")
+  
+  -- Create output buffer
+  local buf = vim.api.nvim_create_buf(false, true)
+  
+  -- Create a split window
+  vim.cmd("vsplit")
+  local win = vim.api.nvim_get_current_win()
+  vim.api.nvim_win_set_buf(win, buf)
+  
+  -- Set up the buffer
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+    "# Tamarin Highlight Inspector",
+    "",
+    "Move cursor in Tamarin buffer to see highlight information",
+    "Press q to close this window",
+    "",
+    "Waiting for cursor movement..."
+  })
+  
+  vim.api.nvim_buf_set_option(buf, "filetype", "markdown")
+  vim.api.nvim_buf_set_option(buf, "modifiable", false)
+  
+  -- Set up autocmd to update on cursor move
+  local augroup = vim.api.nvim_create_augroup("TamarinHighlightTest", { clear = true })
+  
+  vim.api.nvim_create_autocmd({"CursorMoved", "CursorMovedI"}, {
+    group = augroup,
+    callback = function()
+      local current_win = vim.api.nvim_get_current_win()
+      if current_win ~= win then  -- Only update when cursor moves in Tamarin buffer
+        local current_buf = vim.api.nvim_win_get_buf(current_win)
+        local ft = vim.bo[current_buf].filetype
+        
+        if ft == "tamarin" then
+          local pos = vim.api.nvim_win_get_cursor(current_win)
+          local line = vim.api.nvim_buf_get_lines(current_buf, pos[1]-1, pos[1], false)[1]
+          local col = pos[2]
+          
+          local char = line:sub(col+1, col+1)
+          if char == "" then char = "<EOL>" end
+          
+          local syntax, groups = get_syntax_group_at_cursor()
+          
+          vim.api.nvim_buf_set_option(buf, "modifiable", true)
+          vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+            "# Tamarin Highlight Inspector",
+            "",
+            "Position: Line " .. pos[1] .. ", Column " .. pos[2],
+            "Character: '" .. char .. "'",
+            "",
+            "Highlight Group: " .. syntax,
+            "",
+            "All Groups:"
+          })
+          
+          if #groups > 0 then
+            for i, group in ipairs(groups) do
+              vim.api.nvim_buf_set_lines(buf, -1, -1, false, {"- " .. group})
+            end
+          else
+            vim.api.nvim_buf_set_lines(buf, -1, -1, false, {"None"})
+          end
+          
+          vim.api.nvim_buf_set_option(buf, "modifiable", false)
+        end
+      end
+    end
+  })
+  
+  -- Add keymapping to close the window
+  vim.keymap.set("n", "q", function()
+    vim.api.nvim_create_augroup("TamarinHighlightTest", { clear = true })
+    vim.cmd("close")
+  end, {buffer = buf, noremap = true})
+  
+  return true
+end
+
 -- Parse command line arguments
 local auto_fix = false
 for i = 1, #arg do
