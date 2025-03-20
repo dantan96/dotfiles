@@ -33,9 +33,9 @@ syntax region spthyString start=/"/ skip=/\\"/ end=/"/
 
 " Names and identifiers
 syntax match spthyName "[A-Za-z][A-Za-z0-9_]*" contained
-syntax match spthyVar "~[a-z][A-Za-z0-9_]*"
-syntax match spthyVar "$[A-Za-z][A-Za-z0-9_]*"
-syntax match spthyVar "#[a-z][A-Za-z0-9_]*"
+syntax match spthyVar "\~[a-z][A-Za-z0-9_]*"
+syntax match spthyVar "\$[A-Za-z][A-Za-z0-9_]*"
+syntax match spthyVar "\#[a-z][A-Za-z0-9_]*"
 
 " Lemma attributes
 syntax region spthyLemmaAttr start="\[" end="\]" contains=spthyAttr
