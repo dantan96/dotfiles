@@ -1,4 +1,4 @@
-" ftplugin for Tamarin spthy files
+" ftplugin for Spthy files
 if exists("b:did_ftplugin")
   finish
 endif
@@ -16,16 +16,13 @@ else
   syntax enable
 endif
 
-" Set comment string for Tamarin files
+" Set comment string for Spthy files
 setlocal commentstring=/*%s*/
 setlocal comments=s1:/*,mb:*,ex:*/
 
 " Set formatting options
 setlocal formatoptions+=ro
 setlocal formatoptions-=t
-
-" Use spthy parser for tamarin files
-let b:tamarin_treesitter_initialized = 1
 
 " Enable folding by syntax
 setlocal foldmethod=syntax
