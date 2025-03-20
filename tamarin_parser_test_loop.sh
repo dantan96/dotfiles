@@ -58,19 +58,31 @@ print_color "$BLUE" "Running automated tests and fixes..."
 MAX_ITERATIONS=5
 iteration=1
 
-# Array of fix scripts to try in order - put our new approach first
-FIX_SCRIPTS=("modified_spthy_parser_approach.lua" "fix_tamarin_neovim_only.lua" "fix_tamarin_parser.lua" "tamarin_parser_rename.lua")
+# Array of fix scripts to try in order - now that we have gobjcopy, try the rename approach first
+FIX_SCRIPTS=("tamarin_parser_rename.lua" "modified_spthy_parser_approach.lua" "fix_tamarin_neovim_only.lua" "fix_tamarin_parser.lua")
 
 while [ $iteration -le $MAX_ITERATIONS ]; do
   print_color "$CYAN" "=== Iteration $iteration/$MAX_ITERATIONS ==="
   
-  # Run the simple tamarin test
+  # First run the tamarin parser test (testing direct tamarin symbol)
+  print_color "$CYAN" "--- Testing Tamarin Parser Symbol ---"
   run_test "simple_tamarin_test.lua"
-  test_result=$?
+  tamarin_test_result=$?
   
-  # If test failed, try each fix in sequence
-  if [ $test_result -ne 0 ]; then
-    print_color "$YELLOW" "Test failed, trying fixes in sequence..."
+  # Then run the spthy parser test (testing if we can use spthy for .spthy files)
+  print_color "$CYAN" "--- Testing Spthy Parser for Tamarin Files ---"
+  run_test "spthy_test.lua"
+  spthy_test_result=$?
+  
+  # If either test failed, run fixes
+  if [ $tamarin_test_result -ne 0 ] || [ $spthy_test_result -ne 0 ]; then
+    if [ $tamarin_test_result -ne 0 ]; then
+      print_color "$YELLOW" "Tamarin parser test failed, trying fixes..."
+    fi
+    
+    if [ $spthy_test_result -ne 0 ]; then
+      print_color "$YELLOW" "Spthy parser for Tamarin files test failed, trying fixes..."
+    fi
     
     fix_success=false
     
@@ -80,13 +92,30 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
       run_fix "$fix_file"
       fix_result=$?
       
-      # Run test again to see if the fix worked
+      # If the fix was successful, verify with both tests
       if [ $fix_result -eq 0 ]; then
-        print_color "$BLUE" "Running test again to verify fix..."
-        run_test "simple_tamarin_test.lua"
-        verify_result=$?
+        print_color "$BLUE" "Running tests again to verify fix..."
         
-        if [ $verify_result -eq 0 ]; then
+        # First verify tamarin parser
+        if [ $tamarin_test_result -ne 0 ]; then
+          print_color "$CYAN" "--- Re-testing Tamarin Parser Symbol ---"
+          run_test "simple_tamarin_test.lua"
+          tamarin_verify_result=$?
+        else
+          tamarin_verify_result=0
+        fi
+        
+        # Then verify spthy parser
+        if [ $spthy_test_result -ne 0 ]; then
+          print_color "$CYAN" "--- Re-testing Spthy Parser for Tamarin Files ---"
+          run_test "spthy_test.lua" 
+          spthy_verify_result=$?
+        else
+          spthy_verify_result=0
+        fi
+        
+        # Check if all tests now pass
+        if [ $tamarin_verify_result -eq 0 ] && [ $spthy_verify_result -eq 0 ]; then
           print_color "$GREEN" "✓ Fix was successful with $fix_file!"
           fix_success=true
           
@@ -96,7 +125,13 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
           
           break
         else
-          print_color "$RED" "✗ Fix with $fix_file did not resolve all issues"
+          if [ $tamarin_verify_result -ne 0 ]; then
+            print_color "$RED" "✗ Fix with $fix_file did not resolve Tamarin parser issues"
+          fi
+          
+          if [ $spthy_verify_result -ne 0 ]; then
+            print_color "$RED" "✗ Fix with $fix_file did not resolve Spthy parser issues"
+          fi
         fi
       else
         print_color "$RED" "✗ Fix $fix_file failed to run correctly"
