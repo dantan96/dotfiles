@@ -6,6 +6,15 @@
 local test_file = "test.spthy"
 local output_file = "syntax_validation_results.md"
 
+-- Set a safeguard timer to prevent infinite loops
+local start_time = os.time()
+local function check_timeout(seconds)
+  if os.time() - start_time > seconds then
+    print("ERROR: Script execution timed out after " .. seconds .. " seconds!")
+    os.exit(1)
+  end
+end
+
 -- Load the highlight inspector
 package.path = package.path .. ";/Users/dan/.config/nvim/?.lua"
 local inspector = require('highlight_inspector')
@@ -96,24 +105,48 @@ local patterns_to_test = {
 
 -- Initialize Neovim environment
 local function init()
+  check_timeout(5) -- Safety check
+  
+  -- Disable user interaction
+  vim.opt.more = false
+  vim.opt.confirm = false
+  vim.opt.shortmess:append("amoOstTWAIcCqfs")
+  
+  -- Ensure we don't pause for keystrokes
+  vim.api.nvim_set_keymap('n', 'q', '<Nop>', {noremap = true})
+  vim.api.nvim_set_keymap('n', 'Q', '<Nop>', {noremap = true})
+  
   -- Set runtime path
   vim.opt.runtimepath:append("/Users/dan/.config/nvim")
   
-  -- Source init file
-  vim.cmd("source /Users/dan/.config/nvim/init.lua")
+  -- Load minimal configuration (avoid loading init.lua which might have interactive prompts)
+  pcall(function()
+    -- Only load essential syntax files
+    vim.cmd("filetype plugin on")
+    vim.cmd("syntax enable")
+  end)
   
   -- Load the test file
-  vim.cmd("edit " .. test_file)
+  if vim.fn.filereadable(test_file) == 1 then
+    vim.cmd("edit " .. test_file)
+  else
+    print("ERROR: Test file not found: " .. test_file)
+    os.exit(1)
+  end
   
   -- Set filetype
   vim.bo.filetype = "spthy"
   
-  -- Wait for syntax highlighting to apply
-  vim.cmd("sleep 500m")
+  -- Wait minimally for syntax highlighting to apply
+  vim.cmd("sleep 200m")
+  
+  check_timeout(10) -- Safety check after initialization
 end
 
 -- Run the actual inspection
 local function run_inspection()
+  check_timeout(12) -- Safety check
+  
   -- Get expected colors
   local expected_colors = build_expected_colors_map()
   
@@ -122,11 +155,12 @@ local function run_inspection()
   
   if #matches == 0 then
     print("No matches found. Check that the patterns are correct.")
-    return
+    -- Continue anyway to generate an empty report
   end
   
   -- Get highlight information
   local highlights = inspector.get_highlight_info(matches)
+  check_timeout(15) -- Safety check after getting highlights
   
   -- Format and save the detailed results
   local output = inspector.format_results(highlights)
@@ -169,6 +203,11 @@ local function run_inspection()
         end
       end
     end
+    
+    -- Safety check periodically
+    if #discrepancies % 10 == 0 then
+      check_timeout(18)
+    end
   end
   
   -- Report results
@@ -196,13 +235,29 @@ local function run_inspection()
       for i = 1, math.min(3, #items) do
         print(string.format("    Line %d: '%s'", items[i].line, items[i].text))
       end
+      
+      -- Safety check
+      check_timeout(19)
     end
   end
 end
 
--- Main execution
-init()
-run_inspection()
+-- Main execution with error handling
+local function main()
+  local ok, err = pcall(function()
+    init()
+    run_inspection()
+  end)
+  
+  if not ok then
+    print("ERROR: Script execution failed: " .. tostring(err))
+    os.exit(1)
+  end
+end
 
--- Exit
+-- Run with timeout protection
+main()
+
+-- Exit cleanly
+print("Validation completed successfully")
 vim.cmd("qa!") 

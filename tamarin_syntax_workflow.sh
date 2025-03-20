@@ -20,6 +20,12 @@ echo -e "${YELLOW}Step 1: Running syntax highlighting validation...${NC}"
 echo "-----------------------------------------------"
 ./validate_highlighting.sh
 
+# Check validation exit code
+if [ $? -ne 0 ]; then
+  echo -e "${RED}Validation failed. Stopping workflow.${NC}"
+  exit 1
+fi
+
 # Check if validation produced results
 if [ ! -f "syntax_validation_results.md" ]; then
   echo -e "${RED}Error: Validation did not produce results file.${NC}"
@@ -30,10 +36,21 @@ fi
 echo ""
 echo -e "${YELLOW}Step 2: Analyzing results and generating suggestions...${NC}"
 echo "-------------------------------------------------------"
-nvim --headless -u NONE -c "luafile update_highlights.lua" > analysis_output.txt 2>&1
 
-# Check if analysis was successful
-if [ $? -eq 0 ]; then
+# Run the analysis script with a timeout to prevent hanging
+# Using -n flag to avoid loading init files that might pause for user input
+timeout 15s nvim --headless -n -u NONE --cmd 'set t_ti= t_te= nomore' -c "luafile update_highlights.lua" > analysis_output.txt 2>&1
+
+# Check for timeout or other errors
+if [ $? -eq 124 ]; then
+  echo -e "${RED}Error: Analysis timed out after 15 seconds!${NC}"
+  echo "This may indicate a hanging process or infinite loop in the analysis script."
+  exit 1
+elif [ $? -ne 0 ]; then
+  echo -e "${RED}Error analyzing results:${NC}"
+  cat analysis_output.txt
+  exit 1
+else
   cat analysis_output.txt
   
   # Check if suggestions were generated
@@ -41,12 +58,8 @@ if [ $? -eq 0 ]; then
     echo ""
     echo -e "${GREEN}Suggestions have been generated in treesitter_suggestions.md${NC}"
   else
-    echo -e "${RED}No suggestions file was generated.${NC}"
+    echo -e "${YELLOW}No suggestions file was generated. This could mean no issues were found or the analysis had problems.${NC}"
   fi
-else
-  echo -e "${RED}Error analyzing results:${NC}"
-  cat analysis_output.txt
-  exit 1
 fi
 
 # Step 3: Summary and next steps

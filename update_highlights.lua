@@ -6,6 +6,15 @@ local highlights_scm_path = "/Users/dan/.config/nvim/queries/spthy/highlights.sc
 local validation_results = "syntax_validation_results.md"
 local tamarin_colors_path = "/Users/dan/.config/nvim/lua/config/tamarin-colors.lua"
 
+-- Set a safeguard timer to prevent infinite loops
+local start_time = os.time()
+local function check_timeout(seconds)
+  if os.time() - start_time > seconds then
+    print("ERROR: Script execution timed out after " .. seconds .. " seconds!")
+    os.exit(1)
+  end
+end
+
 -- Utility functions
 local function read_file(path)
   local file = io.open(path, "r")
@@ -39,8 +48,16 @@ local function parse_validation_results(content)
   
   -- Look for TreeSitter captures that aren't working correctly
   local capture_section = false
+  local line_count = 0
   
   for line in content:gmatch("[^\r\n]+") do
+    line_count = line_count + 1
+    
+    -- Safety check periodically
+    if line_count % 50 == 0 then
+      check_timeout(10)
+    end
+    
     -- Look for capture problems in markdown table
     if line:match("^|%s*Line:Col%s*|") then
       capture_section = true
@@ -65,6 +82,7 @@ local function parse_validation_results(content)
     end
   end
   
+  check_timeout(12) -- Safety check after parsing
   return problems
 end
 
@@ -75,9 +93,17 @@ local function analyze_treesitter_highlights(content)
   end
   
   local captures = {}
+  local line_count = 0
   
   -- Extract current captures
   for line in content:gmatch("[^\r\n]+") do
+    line_count = line_count + 1
+    
+    -- Safety check periodically
+    if line_count % 20 == 0 then
+      check_timeout(13)
+    end
+    
     -- Look for capture directives like:  @keyword, @function.builtin, etc.
     local capture = line:match("@([%w%.]+)")
     if capture then
@@ -102,6 +128,8 @@ end
 
 -- Generate suggestions for improving the highlights.scm file
 local function generate_suggestions(problems, current_captures)
+  check_timeout(14) -- Safety check before processing
+  
   local suggestions = {}
   
   -- Group problems by type
@@ -146,6 +174,11 @@ local function generate_suggestions(problems, current_captures)
         })
       end
     end
+    
+    -- Safety check periodically
+    if #missing_captures % 10 == 0 then
+      check_timeout(15)
+    end
   end
   
   -- Generate suggestions
@@ -171,7 +204,13 @@ local function generate_suggestions(problems, current_captures)
       table.insert(by_capture[missing.suggested_capture], missing)
     end
     
+    local capture_count = 0
     for capture, items in pairs(by_capture) do
+      capture_count = capture_count + 1
+      if capture_count % 2 == 0 then
+        check_timeout(16) -- Safety check
+      end
+      
       -- Create patterns for this capture
       local patterns = {}
       for _, item in ipairs(items) do
@@ -214,45 +253,71 @@ local function generate_suggestions(problems, current_captures)
   return table.concat(suggestions, "\n")
 end
 
--- Main function
+-- Main function with error handling
 local function main()
-  -- Read the validation results
-  local validation_content, err = read_file(validation_results)
-  if not validation_content then
-    print("Error reading validation results: " .. (err or "unknown error"))
+  -- Check for validation results file
+  if vim.fn.filereadable(validation_results) ~= 1 then
+    print("Error: Validation results file not found: " .. validation_results)
+    print("Please run validation first.")
     return
   end
   
-  -- Read the current highlights.scm
-  local highlights_content, highlights_err = read_file(highlights_scm_path)
-  if not highlights_content then
-    print("Error reading highlights.scm: " .. (highlights_err or "unknown error"))
+  -- Check for highlights.scm file
+  if vim.fn.filereadable(highlights_scm_path) ~= 1 then
+    print("Error: highlights.scm file not found at: " .. highlights_scm_path)
+    print("Please check the file path.")
     return
   end
   
-  -- Parse validation results
-  local problems = parse_validation_results(validation_content)
+  -- Initialize Neovim with minimal settings
+  vim.opt.more = false
+  vim.opt.confirm = false
+  vim.opt.shortmess:append("amoOstTWAIcCqfs")
   
-  -- Analyze current TreeSitter captures
-  local current_captures = analyze_treesitter_highlights(highlights_content)
+  -- Run the analysis with error handling
+  local ok, err = pcall(function()
+    -- Read the validation results
+    local validation_content, read_err = read_file(validation_results)
+    if not validation_content then
+      error("Error reading validation results: " .. (read_err or "unknown error"))
+    end
+    
+    -- Read the current highlights.scm
+    local highlights_content, highlights_err = read_file(highlights_scm_path)
+    if not highlights_content then
+      error("Error reading highlights.scm: " .. (highlights_err or "unknown error"))
+    end
+    
+    -- Parse validation results
+    local problems = parse_validation_results(validation_content)
+    
+    -- Analyze current TreeSitter captures
+    local current_captures = analyze_treesitter_highlights(highlights_content)
+    
+    -- Generate suggestions
+    local suggestions = generate_suggestions(problems, current_captures)
+    
+    -- Write suggestions to file
+    local success, write_err = write_file("treesitter_suggestions.md", suggestions)
+    if not success then
+      error("Error writing suggestions: " .. (write_err or "unknown error"))
+    end
+    
+    print("Analysis complete! Found " .. #problems .. " potential issues.")
+    print("Suggestions written to treesitter_suggestions.md")
+    
+    -- Create a backup of the current highlights.scm
+    write_file(highlights_scm_path .. ".bak", highlights_content)
+    print("Created backup of current highlights.scm to " .. highlights_scm_path .. ".bak")
+  end)
   
-  -- Generate suggestions
-  local suggestions = generate_suggestions(problems, current_captures)
-  
-  -- Write suggestions to file
-  local success, write_err = write_file("treesitter_suggestions.md", suggestions)
-  if not success then
-    print("Error writing suggestions: " .. (write_err or "unknown error"))
-    return
+  if not ok then
+    print("ERROR: " .. tostring(err))
+    os.exit(1)
   end
-  
-  print("Analysis complete! Found " .. #problems .. " potential issues.")
-  print("Suggestions written to treesitter_suggestions.md")
-  
-  -- Create a backup of the current highlights.scm
-  write_file(highlights_scm_path .. ".bak", highlights_content)
-  print("Created backup of current highlights.scm to " .. highlights_scm_path .. ".bak")
 end
 
--- Run the main function
-main() 
+-- Run the main function with timeout protection
+main()
+print("Analysis completed successfully")
+vim.cmd("qa!") 
