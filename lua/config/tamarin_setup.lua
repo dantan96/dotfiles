@@ -97,26 +97,10 @@ autocmd BufRead,BufNewFile *.spthy,*.sapic set filetype=spthy
     return true
   end
   
-  -- Safely handle and suppress expected TreeSitter errors
-  local function suppress_treesitter_errors()
-    -- Override the require_language function to silently handle expected errors
-    local old_require_language = vim.treesitter.language.require_language
-    vim.treesitter.language.require_language = function(lang, path)
-      -- If it's the problematic tamarin parser, log silently and return false
-      if lang == "tamarin" then
-        log("Silently handling tamarin parser load request", false)
-        return false
-      end
-      -- Otherwise call the original function
-      return old_require_language(lang, path)
-    end
-  end
-  
   -- Main setup
   ensure_dirs()
   setup_ftdetect()
   register_filetype()
-  suppress_treesitter_errors()
   local ts_ok = setup_treesitter()
   
   if ts_ok then

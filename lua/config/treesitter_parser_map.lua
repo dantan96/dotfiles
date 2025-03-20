@@ -1,5 +1,5 @@
 -- treesitter_parser_map.lua
--- Configure nvim-treesitter to use the right parser for Tamarin files
+-- Configure nvim-treesitter for Spthy files
 
 local M = {}
 
@@ -7,24 +7,19 @@ function M.setup()
   -- Check if nvim-treesitter is available
   local has_parsers, parsers = pcall(require, "nvim-treesitter.parsers")
   if not has_parsers then
-    vim.notify("nvim-treesitter is not available, skipping parser mapping setup", vim.log.levels.WARN)
+    vim.notify("nvim-treesitter is not available, skipping parser setup", vim.log.levels.WARN)
     return false
   end
   
-  -- First directly add the language alias
-  pcall(function()
-    vim.treesitter.language_add_aliases("spthy", { "tamarin" })
-  end)
-  
-  -- Register Tamarin filetype to use Spthy parser
-  if not parsers.get_parser_configs().tamarin then
-    parsers.get_parser_configs().tamarin = {
+  -- Make sure the spthy parser is properly registered
+  if not parsers.get_parser_configs().spthy then
+    parsers.get_parser_configs().spthy = {
       install_info = { 
-        url = "none",
-        files = {},
+        url = "https://github.com/kevinmorio/tree-sitter-spthy",
+        files = {"src/parser.c"},
+        branch = "main",
       },
-      filetype = "tamarin",
-      used_by = { "tamarin" },
+      filetype = "spthy",
       maintainers = { "kevinmorio" },
     }
   end
