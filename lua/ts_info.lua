@@ -105,6 +105,16 @@ function M.show_info()
   
   -- Create a scratch buffer
   local buf = vim.api.nvim_create_buf(false, true)
+  
+  -- Ensure all lines are properly sanitized
+  for i, line in ipairs(lines) do
+    -- Convert line to string if it's not already
+    line = tostring(line)
+    -- Replace any literal newline characters
+    line = line:gsub("\n", "\\n"):gsub("\r", "\\r")
+    lines[i] = line
+  end
+  
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   
   -- Set buffer options
