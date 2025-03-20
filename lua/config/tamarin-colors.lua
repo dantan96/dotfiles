@@ -30,27 +30,27 @@ function M.setup()
         ["@type.qualifier"]           = colors.pinkPlain,                 -- Type qualifiers: private, public, fresh
 
         ---------------------------------------------------
-        -- VARIABLES
+        -- VARIABLES - WITH DISTINCT CONTRASTING COLORS
         ---------------------------------------------------
-        ["@variable"]                 = colors.orangeNoStyle,             -- General variables: any identifier without special prefix
-        ["@variable.public"]          = colors.greenPlain,                -- Public variables: $A, A:pub
-        ["@variable.fresh"]           = colors.hotPinkPlain,              -- Fresh variables: ~k, ~id, ~ltk
-        ["@variable.temporal"]        = colors.skyBluePlain,              -- Temporal variables: #i, #j
-        ["@variable.message"]         = colors.orangePlain,               -- Message variables: no prefix or :msg
-        ["@variable.number"]          = colors.brownPlain,                -- Number variables/arities: 2 in f/2
+        ["@variable"]                 = colors.orangeNoStyle,             -- Regular variables: general identifiers without special prefix
+        ["@variable.public"]          = colors.deepGreen,                 -- Public variables: $A, A:pub - deep forest green as requested
+        ["@variable.fresh"]           = colors.hotPinkPlain,              -- Fresh variables: ~k, ~id, ~ltk - distinctive hot pink
+        ["@variable.temporal"]        = colors.skyBluePlain,              -- Temporal variables: #i, #j - vibrant sky blue
+        ["@variable.message"]         = colors.orangePlain,               -- Message variables: no prefix or :msg - orange shade
+        ["@variable.number"]          = colors.brownPlain,                -- Number variables/arities: 2 in f/2 - earthy brown
 
         ---------------------------------------------------
-        -- FACTS
+        -- FACTS - WITH DISTINCT CONTRASTING COLORS
         ---------------------------------------------------
-        ["@fact.persistent"]          = colors.redBold,                   -- Persistent facts: !Ltk, !Pk, !User
-        ["@fact.linear"]              = colors.blueBold,                  -- Linear facts: standard facts without ! prefix
-        ["@function.builtin"]         = colors.blueBoldUnderlined,        -- Built-in facts: Fr, In, Out, K
-        ["@fact.action"]              = colors.lightPinkPlain,            -- Action facts: inside --[ and ]->
+        ["@fact.persistent"]          = colors.redBold,                   -- Persistent facts: !Ltk, !Pk, !User - bold red as requested
+        ["@fact.linear"]              = colors.blueBold,                  -- Linear facts: standard facts without ! prefix - bold blue
+        ["@function.builtin"]         = colors.blueBoldUnderlined,        -- Built-in facts: Fr, In, Out, K - same color as linear but underlined
+        ["@fact.action"]              = colors.lightPinkPlain,            -- Action facts: inside --[ and ]-> - light pink for contrast
 
         ---------------------------------------------------
         -- FUNCTIONS AND MACROS
         ---------------------------------------------------
-        ["@function"]                 = colors.tomatoItalic,              -- Regular functions: f(), pk(), h()
+        ["@function"]                 = colors.tomatoItalic,              -- Regular functions: f(), pk(), h() - tomato with italic
         ["@function.macro"]           = colors.tomatoItalic,              -- Macro names: names defined in macro declarations
         ["@function.macro.call"]      = colors.tomatoItalic,              -- Macro use in code: using a defined macro
         
@@ -71,7 +71,7 @@ function M.setup()
         ["@constant"]                 = colors.orchidPlain,               -- General constants: constants without decoration
         ["@constant.string"]          = colors.orchidItalic,              -- String constants: quoted strings
         ["@public.constant"]          = colors.hotPinkBold,               -- Public constants: 'g', 'pk', etc. (in single quotes)
-        ["@string"]                   = colors.greenNoStyle,              -- Strings: quoted text
+        ["@string"]                   = colors.deepGreen,                 -- Strings: quoted text
 
         ---------------------------------------------------
         -- COMMENTS
@@ -102,17 +102,52 @@ function M.setup()
 
             -- Apply custom syntax highlighting for elements that TreeSitter might miss
             vim.cmd([[
-                " Built-in facts
+                " Custom syntax matching for variable prefixes
+                " Dollar sign variables (ensuring prefix has same color)
+                syntax match tamarinPublicVar /\$[A-Za-z0-9_]\+/
+                highlight link tamarinPublicVar @variable.public
+                
+                " Tilde variables for fresh values
+                syntax match tamarinFreshVar /\~[A-Za-z0-9_]\+/
+                highlight link tamarinFreshVar @variable.fresh
+                
+                " Hash variables for temporal values
+                syntax match tamarinTemporalVar /#[A-Za-z0-9_]\+/
+                highlight link tamarinTemporalVar @variable.temporal
+                
+                " Type-annotated variables
+                syntax match tamarinPublicVarType /[A-Za-z0-9_]\+:pub/
+                highlight link tamarinPublicVarType @variable.public
+                
+                syntax match tamarinFreshVarType /[A-Za-z0-9_]\+:fresh/
+                highlight link tamarinFreshVarType @variable.fresh
+                
+                syntax match tamarinTemporalVarType /[A-Za-z0-9_]\+:temporal/
+                highlight link tamarinTemporalVarType @variable.temporal
+                
+                syntax match tamarinMsgVarType /[A-Za-z0-9_]\+:msg/
+                highlight link tamarinMsgVarType @variable.message
+                
+                " Built-in facts (underlined but same color)
                 syntax keyword tamarinBuiltinFact Fr In Out K
                 highlight link tamarinBuiltinFact @function.builtin
                 
                 " Make the ! part of persistent facts the same color
-                syntax match tamarinPersistentFactMark /!/ contained containedin=@fact.persistent
+                syntax match tamarinPersistentFactMark /!/ contained
                 highlight link tamarinPersistentFactMark @fact.persistent
+                
+                syntax match tamarinPersistentFact /![A-Za-z0-9_]\+/ contains=tamarinPersistentFactMark
+                highlight link tamarinPersistentFact @fact.persistent
                 
                 " Public constants with special hot pink color
                 syntax match tamarinPublicConstant /'[^']\+'/
                 highlight link tamarinPublicConstant @public.constant
+                
+                " Action fact brackets with the same color
+                syntax match tamarinActionBrackets /--\[/ 
+                syntax match tamarinActionBracketsEnd /\]->/ 
+                highlight link tamarinActionBrackets @operator
+                highlight link tamarinActionBracketsEnd @operator
             ]])
 
             if vim.g.tamarin_highlight_debug then
@@ -156,7 +191,7 @@ VARIABLES:
 FACTS:
   @fact.persistent     - Persistent facts (!Ltk)
   @fact.linear         - Linear facts
-  @fact.builtin        - Built-in facts (Fr, In, Out, K)
+  @function.builtin    - Built-in facts (Fr, In, Out, K)
   @fact.action         - Action facts
 
 FUNCTIONS AND MACROS:
@@ -186,6 +221,8 @@ COMMENTS:
 
 RULE STRUCTURE:
   @premise             - Rule premises
+  @premise.linear      - Linear facts in premises
+  @premise.persistent  - Persistent facts in premises
   @conclusion          - Rule conclusions
   @rule.simple         - Simple rules
   
