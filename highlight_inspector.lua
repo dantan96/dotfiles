@@ -35,10 +35,31 @@ local function find_matches(file_path, patterns)
   return matches
 end
 
+-- Get actual color value from highlight group
+local function get_highlight_colors(group_name)
+  if group_name == "" then
+    return { fg = "default", bg = "default" }
+  end
+  
+  -- Get highlight definition
+  local output = vim.api.nvim_exec2("highlight " .. group_name, { output = true }).output
+  
+  -- Extract foreground and background colors
+  local fg = output:match("guifg=([#%w]+)")
+  local bg = output:match("guibg=([#%w]+)")
+  
+  return { 
+    fg = fg or "default", 
+    bg = bg or "default",
+    def = output -- Store the full definition
+  }
+end
+
 -- Get highlight information for each match
 local function get_highlight_info(matches)
   local results = {}
   local bufnr = vim.api.nvim_get_current_buf()
+  local highlight_cache = {} -- Cache for highlight definitions
   
   for _, match in ipairs(matches) do
     local line, col = match.line, match.col_start
@@ -48,8 +69,15 @@ local function get_highlight_info(matches)
     local syntax_name = vim.fn.synIDattr(syntax_id, "name")
     local trans_id = vim.fn.synIDtrans(syntax_id)
     local trans_name = vim.fn.synIDattr(trans_id, "name")
-    local fg_color = vim.fn.synIDattr(trans_id, "fg#")
-    local bg_color = vim.fn.synIDattr(trans_id, "bg#")
+    
+    -- Get actual colors from highlight group
+    local colors = nil
+    if highlight_cache[trans_name] then
+      colors = highlight_cache[trans_name]
+    else
+      colors = get_highlight_colors(trans_name)
+      highlight_cache[trans_name] = colors
+    end
     
     -- Get TreeSitter captures
     local ts_captures = {}
@@ -69,8 +97,9 @@ local function get_highlight_info(matches)
       syntax = {
         name = syntax_name,
         trans_name = trans_name,
-        fg_color = fg_color ~= "" and fg_color or "default",
-        bg_color = bg_color ~= "" and bg_color or "default",
+        fg_color = colors.fg,
+        bg_color = colors.bg,
+        definition = colors.def
       },
       captures = capture_names
     })
@@ -88,8 +117,8 @@ local function format_results(results)
   end
   
   output = output .. "## Found " .. #results .. " matches\n\n"
-  output = output .. "| Line:Col | Text | Highlight Group | Color | TreeSitter Captures |\n"
-  output = output .. "|----------|------|----------------|-------|---------------------|\n"
+  output = output .. "| Line:Col | Text | Highlight Group | Foreground Color | Background Color | TreeSitter Captures |\n"
+  output = output .. "|----------|------|----------------|------------------|------------------|---------------------|\n"
   
   for _, result in ipairs(results) do
     local match = result.match
@@ -98,15 +127,31 @@ local function format_results(results)
     if capture_list == "" then capture_list = "None" end
     
     output = output .. string.format(
-      "| %d:%d-%d | `%s` | %s | %s | %s |\n", 
+      "| %d:%d-%d | `%s` | %s | %s | %s | %s |\n", 
       match.line, 
       match.col_start, 
       match.col_end, 
       match.text:gsub("|", "\\|"), 
       syntax.trans_name ~= "" and syntax.trans_name or "None",
       syntax.fg_color ~= "" and syntax.fg_color or "default",
+      syntax.bg_color ~= "" and syntax.bg_color or "default",
       capture_list
     )
+  end
+  
+  -- Add section for highlight definitions
+  output = output .. "\n## Highlight Group Definitions\n\n"
+  
+  -- Track unique highlight groups
+  local seen_groups = {}
+  
+  for _, result in ipairs(results) do
+    local group = result.syntax.trans_name
+    if group ~= "" and not seen_groups[group] then
+      seen_groups[group] = true
+      output = output .. "### " .. group .. "\n\n"
+      output = output .. "```\n" .. result.syntax.definition .. "\n```\n\n"
+    end
   end
   
   return output
