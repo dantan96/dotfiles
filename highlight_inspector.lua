@@ -35,6 +35,42 @@ local function find_matches(file_path, patterns)
   return matches
 end
 
+-- Get RGB values from color name or hex
+local function get_rgb_from_color(color_name)
+  if not color_name or color_name == "" or color_name == "default" or color_name == "NONE" then
+    return { r = nil, g = nil, b = nil, hex = "default" }
+  end
+  
+  -- If it's already a hex value, convert it to RGB
+  if color_name:match("^#%x%x%x%x%x%x$") then
+    local r = tonumber(color_name:sub(2, 3), 16)
+    local g = tonumber(color_name:sub(4, 5), 16)
+    local b = tonumber(color_name:sub(6, 7), 16)
+    return { r = r, g = g, b = b, hex = color_name }
+  end
+  
+  -- Try to get RGB values for named colors using Neovim API
+  -- First check if it's a built-in color
+  local rgb = nil
+  pcall(function()
+    -- Try to get color using eval of :highlight
+    local cmd = "silent! highlight " .. color_name
+    vim.cmd(cmd)
+    rgb = vim.api.nvim_get_color_by_name(color_name)
+  end)
+  
+  if rgb and rgb > 0 then
+    local r = bit.band(bit.rshift(rgb, 16), 0xFF)
+    local g = bit.band(bit.rshift(rgb, 8), 0xFF)
+    local b = bit.band(rgb, 0xFF)
+    local hex = string.format("#%02x%02x%02x", r, g, b)
+    return { r = r, g = g, b = b, hex = hex }
+  end
+  
+  -- If we get here, we couldn't resolve the color
+  return { r = nil, g = nil, b = nil, hex = color_name .. " (unresolved)" }
+end
+
 -- Get actual color value from highlight group
 local function get_highlight_colors(group_name)
   if group_name == "" then
@@ -45,13 +81,50 @@ local function get_highlight_colors(group_name)
   local output = vim.api.nvim_exec2("highlight " .. group_name, { output = true }).output
   
   -- Extract foreground and background colors
-  local fg = output:match("guifg=([#%w]+)")
-  local bg = output:match("guibg=([#%w]+)")
+  local fg_name = output:match("guifg=([#%w]+)")
+  local bg_name = output:match("guibg=([#%w]+)")
+  
+  -- Try to convert named colors to hex
+  local fg_rgb = get_rgb_from_color(fg_name)
+  local bg_rgb = get_rgb_from_color(bg_name)
   
   return { 
-    fg = fg or "default", 
-    bg = bg or "default",
+    fg_name = fg_name or "default",
+    bg_name = bg_name or "default",
+    fg_hex = fg_rgb.hex,
+    bg_hex = bg_rgb.hex,
     def = output -- Store the full definition
+  }
+end
+
+-- Check if TreeSitter is active for this buffer
+local function is_treesitter_active(bufnr)
+  -- Check if the TreeSitter highlighter is active for this buffer
+  local active = false
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  
+  if vim.treesitter and vim.treesitter.highlighter then
+    active = vim.treesitter.highlighter.active[bufnr] ~= nil
+  end
+  
+  -- If active, try to get the language
+  local lang = nil
+  if active then
+    pcall(function()
+      lang = vim.treesitter.language.get_lang(vim.bo[bufnr].filetype)
+    end)
+  end
+  
+  -- Check parser
+  local parser_ok = false
+  if lang then
+    parser_ok = pcall(vim.treesitter.language.inspect, lang)
+  end
+  
+  return {
+    active = active,
+    language = lang or vim.bo[bufnr].filetype,
+    parser_ok = parser_ok
   }
 end
 
@@ -60,6 +133,9 @@ local function get_highlight_info(matches)
   local results = {}
   local bufnr = vim.api.nvim_get_current_buf()
   local highlight_cache = {} -- Cache for highlight definitions
+  
+  -- Check TreeSitter status
+  local ts_status = is_treesitter_active(bufnr)
   
   for _, match in ipairs(matches) do
     local line, col = match.line, match.col_start
@@ -97,11 +173,14 @@ local function get_highlight_info(matches)
       syntax = {
         name = syntax_name,
         trans_name = trans_name,
-        fg_color = colors.fg,
-        bg_color = colors.bg,
+        fg_name = colors.fg_name,
+        bg_name = colors.bg_name,
+        fg_hex = colors.fg_hex,
+        bg_hex = colors.bg_hex,
         definition = colors.def
       },
-      captures = capture_names
+      captures = capture_names,
+      ts_status = ts_status
     })
   end
   
@@ -116,15 +195,35 @@ local function format_results(results)
     return output .. "No matches found.\n"
   end
   
+  -- Show TreeSitter status if available
+  if #results > 0 and results[1].ts_status then
+    local status = results[1].ts_status
+    output = output .. "## TreeSitter Status\n\n"
+    output = output .. "- TreeSitter active: " .. tostring(status.active) .. "\n"
+    output = output .. "- Language: " .. status.language .. "\n"
+    output = output .. "- Parser OK: " .. tostring(status.parser_ok) .. "\n\n"
+  end
+  
   output = output .. "## Found " .. #results .. " matches\n\n"
-  output = output .. "| Line:Col | Text | Highlight Group | Foreground Color | Background Color | TreeSitter Captures |\n"
-  output = output .. "|----------|------|----------------|------------------|------------------|---------------------|\n"
+  output = output .. "| Line:Col | Text | Highlight Group | Foreground | Background | TreeSitter Captures |\n"
+  output = output .. "|----------|------|----------------|------------|------------|---------------------|\n"
   
   for _, result in ipairs(results) do
     local match = result.match
     local syntax = result.syntax
     local capture_list = table.concat(result.captures, ", ")
     if capture_list == "" then capture_list = "None" end
+    
+    -- Format foreground and background as "Name (Hex)"
+    local fg_display = syntax.fg_name
+    if syntax.fg_hex ~= syntax.fg_name then
+      fg_display = syntax.fg_name .. " (" .. syntax.fg_hex .. ")"
+    end
+    
+    local bg_display = syntax.bg_name
+    if syntax.bg_hex ~= syntax.bg_name then
+      bg_display = syntax.bg_name .. " (" .. syntax.bg_hex .. ")"
+    end
     
     output = output .. string.format(
       "| %d:%d-%d | `%s` | %s | %s | %s | %s |\n", 
@@ -133,8 +232,8 @@ local function format_results(results)
       match.col_end, 
       match.text:gsub("|", "\\|"), 
       syntax.trans_name ~= "" and syntax.trans_name or "None",
-      syntax.fg_color ~= "" and syntax.fg_color or "default",
-      syntax.bg_color ~= "" and syntax.bg_color or "default",
+      fg_display,
+      bg_display,
       capture_list
     )
   end
@@ -151,6 +250,21 @@ local function format_results(results)
       seen_groups[group] = true
       output = output .. "### " .. group .. "\n\n"
       output = output .. "```\n" .. result.syntax.definition .. "\n```\n\n"
+    end
+  end
+  
+  -- Add note about traditional syntax vs TreeSitter
+  output = output .. "## Notes\n\n"
+  if #results > 0 and results[1].ts_status then
+    local status = results[1].ts_status
+    if status.active then
+      output = output .. "* Highlighting is using TreeSitter.\n"
+      if #results[1].captures == 0 then
+        output = output .. "* No TreeSitter captures found for the matched text. This suggests the TreeSitter grammar doesn't specifically recognize these tokens.\n"
+      end
+    else
+      output = output .. "* Highlighting is using traditional Vim syntax highlighting, not TreeSitter.\n"
+      output = output .. "* Consider checking if the TreeSitter parser for this language is installed and properly configured.\n"
     end
   end
   
