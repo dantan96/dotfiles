@@ -15,12 +15,12 @@ function M.setup()
   if not parsers.get_parser_configs().spthy then
     parsers.get_parser_configs().spthy = {
       install_info = { 
-        url = "https://github.com/kevinmorio/tree-sitter-spthy",
+        url = "https://github.com/tree-sitter/tree-sitter-spthy",
         files = {"src/parser.c"},
         branch = "main",
       },
       filetype = "spthy",
-      maintainers = { "kevinmorio" },
+      maintainers = { "tree-sitter" },
     }
   end
   
