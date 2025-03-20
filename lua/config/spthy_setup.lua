@@ -16,7 +16,21 @@ function M.setup()
   
   -- 2. Add parser directory to runtimepath to ensure parser is found
   local parser_path = vim.fn.stdpath("config") .. "/parser"
-  vim.opt.runtimepath:append(parser_path)
+  
+  -- Check if the path is already in runtimepath
+  local rtp = vim.opt.runtimepath:get()
+  local in_rtp = false
+  for _, path in ipairs(rtp) do
+    if path == parser_path then
+      in_rtp = true
+      break
+    end
+  end
+  
+  -- Add to runtimepath if not already there
+  if not in_rtp then
+    vim.opt.runtimepath:prepend(parser_path)
+  end
   
   -- 3. Ensure the parser is available and properly registered
   pcall(function()
@@ -38,13 +52,13 @@ function M.setup()
       require("config.tamarin-colors").setup()
       
       -- Explicitly enable TreeSitter for this buffer
-      if vim.fn.exists(':TSBufEnable') == 2 then
-        vim.cmd('TSBufEnable highlight')
-      elseif vim.treesitter and vim.treesitter.start then
-        pcall(function()
+      pcall(function()
+        if vim.treesitter and vim.treesitter.start then
           vim.treesitter.start(0, "spthy")
-        end)
-      end
+        elseif vim.fn.exists(':TSBufEnable') == 2 then
+          vim.cmd('TSBufEnable highlight')
+        end
+      end)
     end,
   })
   
