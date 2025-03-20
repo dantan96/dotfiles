@@ -48,6 +48,11 @@ pcall(function()
   require('config.spthy_setup').setup()
 end)
 
+-- Initialize the Color Wizard for dynamic color style creation
+pcall(function()
+  require('config.color-wizard').setup()
+end)
+
 -- Load lazy.nvim plugin manager
 log("Loading plugin manager")
 require("config.lazy")
