@@ -5,6 +5,9 @@ local M = {}
 
 -- Function to set up highlighting
 function M.setup()
+    -- Debug message to confirm the function is running
+    print("Setting up Tamarin syntax highlighting...")
+    
     -- Load color definitions from colorscheme file
     local colors = require('config.spthy-colorscheme').colors
     
@@ -91,6 +94,138 @@ function M.setup()
         ---------------------------------------------------
         ["@error"]                    = colors.redBoldUnderlined          -- Error nodes: for invalid syntax or parsing errors
     }
+
+    -- Apply all highlights immediately to the current buffer
+    for group, colors in pairs(highlights) do
+        vim.api.nvim_set_hl(0, group, colors)
+    end
+    
+    -- Force syntax on
+    vim.cmd("syntax on")
+    vim.cmd("syntax enable")
+    
+    -- Apply the VimScript syntax highlighting
+    vim.api.nvim_exec([[
+        " First clear any existing syntax to start fresh
+        syntax clear
+        
+        " Comments - HIGHEST PRIORITY
+        syntax match spthyComment /\/\/.*$/ contains=@Spell containedin=ALL
+        syntax region spthyComment start="/\*" end="\*/" fold contains=@Spell containedin=ALL
+        
+        " Theory structure keywords
+        syntax keyword spthyKeyword theory begin end
+        syntax keyword spthyKeyword rule lemma axiom builtins
+        syntax keyword spthyKeyword functions equations predicates
+        syntax keyword spthyKeyword restrictions let in
+        
+        " Public variables with '$' prefix - HIGHEST PRIORITY
+        syntax match spthyPublicVarPrefix /\$/ contained
+        syntax match spthyPublicVar /\$[A-Za-z0-9_]\+/ contains=spthyPublicVarPrefix containedin=ALL
+        
+        " Fresh variables with '~' prefix - HIGHEST PRIORITY
+        syntax match spthyFreshVarPrefix /\~/ contained
+        syntax match spthyFreshVar /\~[A-Za-z0-9_]\+/ contains=spthyFreshVarPrefix containedin=ALL
+        
+        " Temporal variables with '#' prefix - HIGHEST PRIORITY
+        syntax match spthyTemporalVarPrefix /#/ contained
+        syntax match spthyTemporalVar /#[A-Za-z0-9_]\+/ contains=spthyTemporalVarPrefix containedin=ALL
+        
+        " Variable types with explicit priority
+        syntax match spthyPublicType /[A-Za-z0-9_]\+:pub/ containedin=ALL
+        syntax match spthyFreshType /[A-Za-z0-9_]\+:fresh/ containedin=ALL
+        syntax match spthyTemporalType /[A-Za-z0-9_]\+:temporal/ containedin=ALL
+        syntax match spthyMessageType /[A-Za-z0-9_]\+:msg/ containedin=ALL
+        
+        " =============================================
+        " FACTS - EXPLICITLY COLORED WITH PROPER PRIORITY
+        " =============================================
+        
+        " Persistent fact prefix - specifically colored red
+        syntax match spthyPersistentFactPrefix /!/ contained
+        highlight link spthyPersistentFactPrefix @fact.persistent
+        
+        " Persistent facts - RED, with contained variables
+        syntax match spthyPersistentFact /![A-Za-z0-9_]\+/ contains=spthyPersistentFactPrefix
+        
+        " Built-in facts with highest priority after variables
+        syntax keyword spthyBuiltinFact Fr In Out K
+        
+        " Action facts - force LIGHT PINK color
+        syntax region spthyActionFact start=/--\[/ end=/\]->/ contains=spthyRuleArrow,spthyFreshVar,spthyPublicVar,spthyTemporalVar,spthyPersistentFact,spthyBuiltinFact,spthyNormalFact
+        
+        " Regular facts - explicit BLUE color
+        syntax match spthyNormalFact /\<[A-Z][A-Za-z0-9_]*\>/ contains=NONE
+        
+        " =============================================
+        " FUNCTIONS, OPERATORS AND PUNCTUATION
+        " =============================================
+        
+        " Function names - TOMATO color
+        syntax match spthyFunction /\<[a-z][A-Za-z0-9_]*\>(/he=e-1
+        
+        " Builtin function names 
+        syntax keyword spthyBuiltinFunction h pk sign verify senc sdec aenc adec mac verify
+        
+        " Rule arrows and symbols
+        syntax match spthyRuleArrow /--\[\|\]->/ 
+        
+        " Equal sign in let statements
+        syntax match spthyOperator /=/ 
+        
+        " Standard brackets and delimiters
+        syntax match spthyBracket /(\|)\|\[\|\]\|{\|}\|,\|;\|:/
+        
+        " Constants in single quotes
+        syntax region spthyConstant start=/'/ end=/'/ 
+        
+        " =============================================
+        " EXPLICIT COLOR LINKING WITH PRIORITIES
+        " =============================================
+        
+        " Comments
+        highlight def link spthyComment @comment
+        
+        " Keywords and structure
+        highlight def link spthyKeyword @keyword
+        
+        " Variables - enforced colors regardless of container
+        highlight def link spthyPublicVar @variable.public
+        highlight def link spthyPublicVarPrefix @variable.public
+        highlight def link spthyFreshVar @variable.fresh
+        highlight def link spthyFreshVarPrefix @variable.fresh
+        highlight def link spthyTemporalVar @variable.temporal
+        highlight def link spthyTemporalVarPrefix @variable.temporal
+        
+        highlight def link spthyPublicType @variable.public
+        highlight def link spthyFreshType @variable.fresh
+        highlight def link spthyTemporalType @variable.temporal
+        highlight def link spthyMessageType @variable.message
+        
+        " Facts - must be properly colored
+        highlight def link spthyPersistentFact @fact.persistent
+        highlight def link spthyBuiltinFact @function.builtin
+        highlight def link spthyActionFact @fact.action
+        highlight def link spthyNormalFact @fact.linear
+        
+        " Functions
+        highlight def link spthyFunction @function
+        highlight def link spthyBuiltinFunction @function.builtin
+        
+        " Operators and punctuation
+        highlight def link spthyRuleArrow @operator
+        highlight def link spthyOperator @operator.assignment
+        highlight def link spthyBracket @punctuation.bracket
+        
+        " Constants
+        highlight def link spthyConstant @public.constant
+        
+        " Run a custom event to force highlight update
+        doautocmd User TamarinSyntaxApplied
+    ]], false)
+    
+    -- Debug message showing setup completion
+    print("Tamarin syntax highlighting setup complete")
 
     -- Register event to apply highlights ONLY when tamarin/spthy filetypes are loaded
     vim.api.nvim_create_autocmd("FileType", {
