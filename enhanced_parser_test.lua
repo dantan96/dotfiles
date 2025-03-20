@@ -252,14 +252,36 @@ local function finish_tests()
     print(symbol .. " " .. result.name .. ": " .. result.message)
   end
   
+  -- Check if tamarin parser failures are critical
+  local tamarin_load_failed = false
+  local tamarin_parse_failed = false
+  
+  for _, result in ipairs(results) do
+    if result.name == "Load Tamarin Parser" and not result.success then
+      tamarin_load_failed = true
+    end
+    if result.name == "Parse with Tamarin" and not result.success then
+      tamarin_parse_failed = true
+    end
+  end
+  
+  -- If both tamarin parser tests fail, we consider this a critical failure
+  local critical_failure = tamarin_load_failed and tamarin_parse_failed
+  
   print("\n" .. (all_pass and colors.green or colors.red) ..
     "Overall: " .. (all_pass and "PASS" or "FAIL") .. colors.reset)
   
-  -- Exit with appropriate code
-  if all_pass then
-    vim.cmd('quit!')
-  else
+  -- Force the test to fail if we have critical failures
+  if critical_failure then
+    print(colors.red .. "Critical failures detected with Tamarin parser" .. colors.reset)
     vim.cmd('cquit!')
+  else
+    -- Exit with appropriate code based on if all tests pass
+    if all_pass then
+      vim.cmd('quit!')
+    else
+      vim.cmd('cquit!')
+    end
   end
 end
 
