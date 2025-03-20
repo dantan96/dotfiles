@@ -24,8 +24,8 @@ function M.setup()
         ["@preproc.identifier"]       = colors.deeperPurple,              -- Preprocessor identifiers: PREPROCESSING, DEBUG, etc.
         
         ["@structure"]                = colors.goldBold,                  -- Structure elements: protocol, for, accounts
-        ["@type"]                     = colors.goldItalic,                -- Theory/type names: name in 'theory <name>'
-        ["@function.rule"]            = colors.goldBold,                  -- Rule/lemma names: name in 'rule <name>:', 'lemma <name>:'
+        ["@type"]                     = colors.goldItalic,                -- Theory/type names: name in 'theory <n>'
+        ["@function.rule"]            = colors.goldBold,                  -- Rule/lemma names: name in 'rule <n>:', 'lemma <n>:'
         ["@type.builtin"]             = colors.goldBoldUnderlined,        -- Builtins: diffie-hellman, hashing, symmetric-encryption, signing, etc.
         ["@type.qualifier"]           = colors.pinkPlain,                 -- Type qualifiers: private, public, fresh
 
@@ -94,130 +94,165 @@ function M.setup()
 
     -- Register event to apply highlights ONLY when tamarin/spthy filetypes are loaded
     vim.api.nvim_create_autocmd("FileType", {
-        pattern = { "tamarin", "spthy" },
+        pattern = { "spthy" },
         callback = function()
             -- Apply highlights to ensure they're set for this buffer
             for group, colors in pairs(highlights) do
                 vim.api.nvim_set_hl(0, group, colors)
             end
 
-            -- Disable TreeSitter highlighting for specific patterns that we want to handle ourselves
+            -- Temporarily disable TreeSitter highlighting entirely for this buffer
+            if vim.fn.exists(":TSBufDisable") == 1 then
+                vim.cmd("TSBufDisable highlight")
+            end
+
+            -- Apply pure VimScript syntax highlighting with careful priorities
             vim.api.nvim_exec([[
                 " First clear any existing syntax to start fresh
                 syntax clear
 
-                " Basic elements for spthy files
-                " =================================
-                " Comments
-                syntax match spthyComment /\/\/.*$/ contains=@Spell
-                syntax region spthyComment start="/\*" end="\*/" fold contains=@Spell
-                highlight link spthyComment @comment
-
-                " Theory structure
+                " =============================================
+                " BASIC SYNTAX ELEMENTS WITH PRIORITY CONTROL
+                " =============================================
+                
+                " Comments - HIGHEST PRIORITY
+                syntax match spthyComment /\/\/.*$/ contains=@Spell containedin=ALL
+                syntax region spthyComment start="/\*" end="\*/" fold contains=@Spell containedin=ALL
+                
+                " Theory structure keywords
                 syntax keyword spthyKeyword theory begin end
                 syntax keyword spthyKeyword rule lemma axiom builtins
                 syntax keyword spthyKeyword functions equations predicates
                 syntax keyword spthyKeyword restrictions let in
-                highlight link spthyKeyword @keyword
-
-                " Operators and punctuation
-                " =================================
-                " Equal sign in let statements - neutral color
-                syntax match spthyOperator /=/ 
-                highlight link spthyOperator @operator.assignment
-
-                " Rule arrows and brackets with the same color
+                
+                " =============================================
+                " VARIABLES - ABSOLUTE HIGHEST PRIORITY
+                " =============================================
+                
+                " Public variables with '$' prefix - HIGHEST PRIORITY
+                syntax match spthyPublicVarPrefix /\$/ contained
+                syntax match spthyPublicVar /\$[A-Za-z0-9_]\+/ contains=spthyPublicVarPrefix containedin=ALL
+                
+                " Fresh variables with '~' prefix - HIGHEST PRIORITY
+                syntax match spthyFreshVarPrefix /\~/ contained
+                syntax match spthyFreshVar /\~[A-Za-z0-9_]\+/ contains=spthyFreshVarPrefix containedin=ALL
+                
+                " Temporal variables with '#' prefix - HIGHEST PRIORITY
+                syntax match spthyTemporalVarPrefix /#/ contained
+                syntax match spthyTemporalVar /#[A-Za-z0-9_]\+/ contains=spthyTemporalVarPrefix containedin=ALL
+                
+                " Variable types with explicit priority
+                syntax match spthyPublicType /[A-Za-z0-9_]\+:pub/ containedin=ALL
+                syntax match spthyFreshType /[A-Za-z0-9_]\+:fresh/ containedin=ALL
+                syntax match spthyTemporalType /[A-Za-z0-9_]\+:temporal/ containedin=ALL
+                syntax match spthyMessageType /[A-Za-z0-9_]\+:msg/ containedin=ALL
+                
+                " =============================================
+                " FACTS - EXPLICITLY COLORED WITH PROPER PRIORITY
+                " =============================================
+                
+                " Persistent fact prefix - specifically colored red
+                syntax match spthyPersistentFactPrefix /!/ contained
+                highlight link spthyPersistentFactPrefix @fact.persistent
+                
+                " Persistent facts - RED, with contained variables
+                syntax match spthyPersistentFact /![A-Za-z0-9_]\+/ contains=spthyPersistentFactPrefix
+                
+                " Built-in facts with highest priority after variables
+                syntax keyword spthyBuiltinFact Fr In Out K
+                
+                " Action facts - force LIGHT PINK color
+                syntax region spthyActionFact start=/--\[/ end=/\]->/ contains=spthyRuleArrow,spthyFreshVar,spthyPublicVar,spthyTemporalVar,spthyPersistentFact,spthyBuiltinFact,spthyNormalFact
+                
+                " Regular facts - explicit BLUE color
+                syntax match spthyNormalFact /\<[A-Z][A-Za-z0-9_]*\>/ contains=NONE
+                
+                " =============================================
+                " FUNCTIONS, OPERATORS AND PUNCTUATION
+                " =============================================
+                
+                " Function names - TOMATO color
+                syntax match spthyFunction /\<[a-z][A-Za-z0-9_]*\>(/he=e-1
+                
+                " Builtin function names 
+                syntax keyword spthyBuiltinFunction h pk sign verify senc sdec aenc adec mac verify
+                
+                " Rule arrows and symbols
                 syntax match spthyRuleArrow /--\[\|\]->/ 
-                highlight link spthyRuleArrow @operator
-
+                
+                " Equal sign in let statements
+                syntax match spthyOperator /=/ 
+                
                 " Standard brackets and delimiters
                 syntax match spthyBracket /(\|)\|\[\|\]\|{\|}\|,\|;\|:/
-                highlight link spthyBracket @punctuation.bracket
-
-                " Variables and terms
-                " =================================
-                " Fresh variables (~)
-                syntax match spthyFreshVar /\~[A-Za-z0-9_]\+/ 
-                highlight link spthyFreshVar @variable.fresh
-
-                " Public variables ($)
-                syntax match spthyPublicVar /\$[A-Za-z0-9_]\+/ 
-                highlight link spthyPublicVar @variable.public
-
-                " Temporal variables (#)
-                syntax match spthyTemporalVar /#[A-Za-z0-9_]\+/ 
-                highlight link spthyTemporalVar @variable.temporal
-
-                " Variable types (:pub, :fresh, etc)
-                syntax match spthyPublicType /[A-Za-z0-9_]\+:pub/ 
-                highlight link spthyPublicType @variable.public
-
-                syntax match spthyFreshType /[A-Za-z0-9_]\+:fresh/ 
-                highlight link spthyFreshType @variable.fresh
-
-                syntax match spthyTemporalType /[A-Za-z0-9_]\+:temporal/ 
-                highlight link spthyTemporalType @variable.temporal
-
-                syntax match spthyMessageType /[A-Za-z0-9_]\+:msg/ 
-                highlight link spthyMessageType @variable.message
-
-                " Facts and predicates
-                " =================================
-                " Persistent facts (!)
-                syntax match spthyPersistentFact /![A-Za-z0-9_]\+/ 
-                highlight link spthyPersistentFact @fact.persistent
                 
-                " Built-in facts (Fr, In, Out, K)
-                syntax keyword spthyBuiltinFact Fr In Out K
-                highlight link spthyBuiltinFact @function.builtin
-
-                " Action facts
-                syntax region spthyActionFact start=/--\[/ end=/\]->/ contains=spthyRuleArrow,spthyFreshVar,spthyPublicVar,spthyTemporalVar,spthyPersistentFact,spthyBuiltinFact,spthyNormalFact
-                highlight link spthyActionFact @fact.action
-
-                " Regular facts (not caught by others)
-                syntax match spthyNormalFact /\<[A-Z][A-Za-z0-9_]*\>/ 
-                highlight link spthyNormalFact @fact.linear
-
-                " Functions and constants
-                " =================================
-                " Function names
-                syntax match spthyFunction /\<[a-z][A-Za-z0-9_]*\>(/he=e-1
-                highlight link spthyFunction @function
-
                 " Constants in single quotes
                 syntax region spthyConstant start=/'/ end=/'/ 
-                highlight link spthyConstant @public.constant
                 
-                " Enable TreeSitter-based highlighting as a fallback
-                try
-                    if exists(":TSBufEnable")
-                        TSBufEnable highlight
-                    endif
-                catch
-                    " Ignore errors if TreeSitter is unavailable
-                endtry
-
-                " Always re-apply our most important syntax overrides
-                syntax match spthyFreshVar /\~[A-Za-z0-9_]\+/ containedin=ALL
-                highlight link spthyFreshVar @variable.fresh
+                " =============================================
+                " EXPLICIT COLOR LINKING WITH PRIORITIES
+                " =============================================
                 
-                syntax match spthyPublicVar /\$[A-Za-z0-9_]\+/ containedin=ALL
-                highlight link spthyPublicVar @variable.public
+                " Comments
+                highlight def link spthyComment @comment
                 
-                syntax match spthyPersistentFact /![A-Za-z0-9_]\+/ containedin=ALL
-                highlight link spthyPersistentFact @fact.persistent
+                " Keywords and structure
+                highlight def link spthyKeyword @keyword
                 
-                syntax keyword spthyBuiltinFact Fr In Out K containedin=ALL
-                highlight link spthyBuiltinFact @function.builtin
+                " Variables - enforced colors regardless of container
+                highlight def link spthyPublicVar @variable.public
+                highlight def link spthyPublicVarPrefix @variable.public
+                highlight def link spthyFreshVar @variable.fresh
+                highlight def link spthyFreshVarPrefix @variable.fresh
+                highlight def link spthyTemporalVar @variable.temporal
+                highlight def link spthyTemporalVarPrefix @variable.temporal
                 
-                syntax match spthyOperator /=/ containedin=ALL
-                highlight link spthyOperator @operator.assignment
+                highlight def link spthyPublicType @variable.public
+                highlight def link spthyFreshType @variable.fresh
+                highlight def link spthyTemporalType @variable.temporal
+                highlight def link spthyMessageType @variable.message
+                
+                " Facts - must be properly colored
+                highlight def link spthyPersistentFact @fact.persistent
+                highlight def link spthyBuiltinFact @function.builtin
+                highlight def link spthyActionFact @fact.action
+                highlight def link spthyNormalFact @fact.linear
+                
+                " Functions
+                highlight def link spthyFunction @function
+                highlight def link spthyBuiltinFunction @function.builtin
+                
+                " Operators and punctuation
+                highlight def link spthyRuleArrow @operator
+                highlight def link spthyOperator @operator.assignment
+                highlight def link spthyBracket @punctuation.bracket
+                
+                " Constants
+                highlight def link spthyConstant @public.constant
+                
+                " Run a custom event to force highlight update
+                doautocmd User TamarinSyntaxApplied
             ]], false)
 
+            -- Set a debug message if wanted
             if vim.g.tamarin_highlight_debug then
-                vim.api.nvim_echo({ { "Tamarin colors applied for " .. vim.bo.filetype, "Normal" } }, false, {})
+                vim.api.nvim_echo({ { "Tamarin colors applied with aggressive priority rules", "Normal" } }, false, {})
             end
+            
+            -- Create an autocmd to reapply these highlights after color scheme changes
+            vim.api.nvim_create_autocmd("ColorScheme", {
+                pattern = "*",
+                callback = function()
+                    if vim.bo.filetype == "spthy" then
+                        -- Reapply our highlights
+                        for group, colors in pairs(highlights) do
+                            vim.api.nvim_set_hl(0, group, colors)
+                        end
+                        -- Run our custom event
+                        vim.cmd("doautocmd User TamarinSyntaxApplied")
+                    end
+                end
+            })
         end
     })
 end

@@ -7,21 +7,10 @@
 theory TestHighlighting
 begin
 
-builtins: diffie-hellman, hashing, symmetric-encryption, signing
+builtins: diffie-hellman, hashing, asymmetric-encryption, symmetric-encryption, signing
 
 /* Types and function declarations */
-functions: f/1, g/2, test/3
-equations: f(g(x,y)) = h(<x,y>)
-
-/* Security properties */
-lemma types [sources]:
-  "All m #i. KU(m)@i ==> (Ex #j. KU(m)@j & j < i) | (Ex #j. !KD(m)@j) | (Ex #j. Out(m)@j)"
-
-lemma secrecy_of_key [reuse, use_induction]:
-  "All A B k #i.
-    Secret(k, A, B)@i ==>
-    not (Ex #j. K(k)@j)
-    | (Ex X #r. Reveal(X)@r & Honest(X)@i)"
+/*functions: h/1, senc/2, sdec/2*/
 
 /* Rule block with annotations, facts and terms */
 rule Register_User:
@@ -85,6 +74,7 @@ process
        out('Error'))
   )
 
+
 /* Restrictions */
 restriction OnlyOnce:
   "All #i #j. OnlyOnce()@i & OnlyOnce()@j ==> #i = #j"
@@ -94,5 +84,15 @@ restriction Equality:
 
 restriction Honest_agents_behavior:
   "All A B m #i #j. Send(A,B,m)@i & Recv(B,A,m)@j ==> #i < #j"
+
+/* Security properties */
+lemma types [sources]:
+  "All m #i. KU(m)@i ==> (Ex #j. KU(m)@j & j < i) | (Ex #j. !KD(m)@j) | (Ex #j. Out(m)@j)"
+
+lemma secrecy_of_key [reuse, use_induction]:
+  "All A B k #i.
+    Secret(k, A, B)@i ==>
+    not (Ex #j. K(k)@j)
+    | (Ex X #r. Reveal(X)@r & Honest(X)@i)"
 
 end 

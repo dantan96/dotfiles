@@ -101,4 +101,7 @@ pcall(function()
   log("TreeSitter info command registered")
 end)
 
+-- Setup Tamarin diagnostic tool
+require('tamarin_diagnostic').setup()
+
 log("Initialization complete")
