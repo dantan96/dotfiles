@@ -58,8 +58,8 @@ print_color "$BLUE" "Running automated tests and fixes..."
 MAX_ITERATIONS=5
 iteration=1
 
-# Array of fix scripts to try in order
-FIX_SCRIPTS=("fix_tamarin_neovim_only.lua" "fix_tamarin_parser.lua" "tamarin_parser_rename.lua")
+# Array of fix scripts to try in order - put our new approach first
+FIX_SCRIPTS=("modified_spthy_parser_approach.lua" "fix_tamarin_neovim_only.lua" "fix_tamarin_parser.lua" "tamarin_parser_rename.lua")
 
 while [ $iteration -le $MAX_ITERATIONS ]; do
   print_color "$CYAN" "=== Iteration $iteration/$MAX_ITERATIONS ==="
@@ -84,10 +84,16 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
       if [ $fix_result -eq 0 ]; then
         print_color "$BLUE" "Running test again to verify fix..."
         run_test "simple_tamarin_test.lua"
+        verify_result=$?
         
-        if [ $? -eq 0 ]; then
+        if [ $verify_result -eq 0 ]; then
           print_color "$GREEN" "✓ Fix was successful with $fix_file!"
           fix_success=true
+          
+          # Save the successful fix info
+          echo "Fix successful on $(date)" > successful_fix.txt
+          echo "Using script: $fix_file" >> successful_fix.txt
+          
           break
         else
           print_color "$RED" "✗ Fix with $fix_file did not resolve all issues"
