@@ -42,7 +42,7 @@ log("Registered Tamarin filetype")
 -- Load the simplified Tamarin setup with proper fallback
 pcall(function()
   log("Loading Tamarin setup module")
-  local tamarin_setup = require('tamarin_setup')
+  local tamarin_setup = require('config.tamarin_setup')
   tamarin_setup.setup()
   log("Tamarin setup complete")
 end)

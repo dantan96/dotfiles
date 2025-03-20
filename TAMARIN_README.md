@@ -13,7 +13,20 @@ The integration is set up with the following components:
 - `ftdetect/tamarin.vim` - Detects `.spthy` and `.sapic` files and sets the filetype to "spthy"
 - `syntax/spthy.vim` - Provides syntax highlighting rules for Tamarin files
 - `ftplugin/spthy.vim` - Sets up editor behavior for Tamarin files
-- `tamarin_setup.lua` - Manages the overall integration
+- `lua/config/tamarin_setup.lua` - Manages the overall integration
+
+## Directory Structure
+
+The correct Neovim directory structure for this integration is:
+
+```
+~/.config/nvim/
+  ├── ftdetect/tamarin.vim      # Filetype detection
+  ├── ftplugin/spthy.vim        # Filetype-specific settings
+  ├── syntax/spthy.vim          # Syntax highlighting definitions
+  ├── lua/config/tamarin_setup.lua  # Integration module
+  └── init.lua                  # Main config loading the module
+```
 
 ## How It Works
 
