@@ -16,6 +16,12 @@ local colors = {
 local results = {}
 local all_pass = true
 
+-- Important tests for the Tamarin parser specifically
+local critical_tamarin_tests = {
+  ["Load Tamarin Parser"] = false,  -- Start as failed
+  ["Parse with Tamarin"] = false    -- Start as failed
+}
+
 -- Helper to add a test result
 local function add_result(name, success, message)
   local result = {
@@ -26,6 +32,11 @@ local function add_result(name, success, message)
   
   table.insert(results, result)
   if not success then all_pass = false end
+  
+  -- Update critical test results
+  if critical_tamarin_tests[name] ~= nil then
+    critical_tamarin_tests[name] = success
+  end
   
   -- Print immediately for real-time feedback
   local symbol = success and colors.green .. "✓" .. colors.reset or colors.red .. "✗" .. colors.reset
@@ -252,27 +263,15 @@ local function finish_tests()
     print(symbol .. " " .. result.name .. ": " .. result.message)
   end
   
-  -- Check if tamarin parser failures are critical
-  local tamarin_load_failed = false
-  local tamarin_parse_failed = false
-  
-  for _, result in ipairs(results) do
-    if result.name == "Load Tamarin Parser" and not result.success then
-      tamarin_load_failed = true
-    end
-    if result.name == "Parse with Tamarin" and not result.success then
-      tamarin_parse_failed = true
-    end
-  end
-  
-  -- If both tamarin parser tests fail, we consider this a critical failure
-  local critical_failure = tamarin_load_failed and tamarin_parse_failed
+  -- Check if tamarin-specific critical tests pass
+  local tamarin_critical_failure = not (critical_tamarin_tests["Load Tamarin Parser"] and 
+                                      critical_tamarin_tests["Parse with Tamarin"])
   
   print("\n" .. (all_pass and colors.green or colors.red) ..
     "Overall: " .. (all_pass and "PASS" or "FAIL") .. colors.reset)
   
-  -- Force the test to fail if we have critical failures
-  if critical_failure then
+  -- If any tamarin critical test fails, the whole test fails
+  if tamarin_critical_failure then
     print(colors.red .. "Critical failures detected with Tamarin parser" .. colors.reset)
     vim.cmd('cquit!')
   else
