@@ -15,9 +15,146 @@ local function check_timeout(seconds)
   end
 end
 
--- Load the highlight inspector
-package.path = package.path .. ";/Users/dan/.config/nvim/?.lua"
-local inspector = require('highlight_inspector')
+-- Load the highlight inspector or implement our own functions if it fails
+local inspector = {}
+
+-- Find all occurrences of a pattern in a file
+function inspector.find_matches(file_path, patterns)
+  local matches = {}
+  local content = {}
+  
+  -- Attempt to read the file
+  local file = io.open(file_path, "r")
+  if not file then
+    print("Error: Could not open file " .. file_path)
+    return matches
+  end
+  
+  -- Read file content
+  for line in file:lines() do
+    table.insert(content, line)
+  end
+  file:close()
+  
+  -- Find matches in content
+  for _, pattern in ipairs(patterns) do
+    for line_num, line in ipairs(content) do
+      local start_idx, end_idx = line:find(pattern)
+      while start_idx do
+        table.insert(matches, {
+          line = line_num,
+          col_start = start_idx,
+          col_end = end_idx,
+          text = line:sub(start_idx, end_idx),
+          pattern = pattern
+        })
+        start_idx, end_idx = line:find(pattern, end_idx + 1)
+        
+        -- Safety check
+        check_timeout(8)
+      end
+    end
+  end
+  
+  -- Sort matches by line and column
+  table.sort(matches, function(a, b)
+    if a.line == b.line then
+      return a.col_start < b.col_start
+    end
+    return a.line < b.line
+  end)
+  
+  return matches
+end
+
+-- Get highlight information for each match
+function inspector.get_highlight_info(matches)
+  local results = {}
+  
+  for _, match in ipairs(matches) do
+    -- Get syntax info at this position
+    local syntax_id = vim.fn.synID(match.line, match.col_start, true)
+    local syntax_name = vim.fn.synIDattr(syntax_id, "name")
+    local trans_id = vim.fn.synIDtrans(syntax_id)
+    local trans_name = vim.fn.synIDattr(trans_id, "name")
+    local fg_color = vim.fn.synIDattr(trans_id, "fg#")
+    local bg_color = vim.fn.synIDattr(trans_id, "bg#")
+    
+    -- Get treesitter captures if available
+    local captures = {}
+    pcall(function()
+      local ts_captures = vim.treesitter.get_captures_at_pos(0, match.line-1, match.col_start-1)
+      if ts_captures then
+        for _, capture in ipairs(ts_captures) do
+          table.insert(captures, capture.capture)
+        end
+      end
+    end)
+    
+    -- Build result
+    table.insert(results, {
+      match = match,
+      syntax = {
+        name = syntax_name,
+        trans_name = trans_name,
+        fg_hex = fg_color,
+        bg_hex = bg_color
+      },
+      captures = captures,
+      ts_status = {
+        active = (vim.treesitter.highlighter and 
+                 vim.treesitter.highlighter.active and 
+                 vim.treesitter.highlighter.active[0]) or false
+      }
+    })
+    
+    -- Safety check
+    check_timeout(10)
+  end
+  
+  return results
+end
+
+-- Format results as readable text
+function inspector.format_results(results)
+  local output = "# Syntax Highlight Inspection Results\n\n"
+  
+  if #results == 0 then
+    return output .. "No matches found.\n"
+  end
+  
+  -- Show TreeSitter status if available
+  local ts_status = results[1].ts_status
+  output = output .. "## TreeSitter Status\n\n"
+  output = output .. "- TreeSitter active: " .. tostring(ts_status.active) .. "\n\n"
+  
+  output = output .. "## Found " .. #results .. " matches\n\n"
+  output = output .. "| Line:Col | Text | Highlight Group | Foreground | TreeSitter Captures |\n"
+  output = output .. "|----------|------|----------------|------------|---------------------|\n"
+  
+  for _, result in ipairs(results) do
+    local match = result.match
+    local syntax = result.syntax
+    local capture_list = table.concat(result.captures, ", ")
+    if capture_list == "" then capture_list = "None" end
+    
+    output = output .. string.format(
+      "| %d:%d-%d | `%s` | %s | %s | %s |\n", 
+      match.line, 
+      match.col_start, 
+      match.col_end, 
+      match.text:gsub("|", "\\|"), 
+      syntax.trans_name ~= "" and syntax.trans_name or "None",
+      syntax.fg_hex or "default",
+      capture_list
+    )
+    
+    -- Safety check
+    check_timeout(12)
+  end
+  
+  return output
+end
 
 -- Get colors from the spthy-colorscheme configuration
 local function load_color_configuration()
