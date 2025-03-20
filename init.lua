@@ -33,53 +33,19 @@ log("Starting Neovim initialization")
 -- Set up filetype detection for Tamarin files - do this as early as possible
 vim.filetype.add({
   extension = {
-    spthy = "tamarin",
-    sapic = "tamarin"
+    spthy = "spthy",
+    sapic = "spthy"
   },
 })
 log("Registered Tamarin filetype")
 
--- Initialize Tamarin syntax highlighting module
+-- Load the simplified Tamarin setup with proper fallback
 pcall(function()
-  log("Loading Tamarin highlighting module")
-  require('config.tamarin-highlights').setup()
-  log("Tamarin highlighting module loaded")
+  log("Loading Tamarin setup module")
+  local tamarin_setup = require('tamarin_setup')
+  tamarin_setup.setup()
+  log("Tamarin setup complete")
 end)
-
--- Load Tamarin TreeSitter integration
-pcall(function() 
-  log("Loading Tamarin TreeSitter parser symlink")
-  require('config.spthy_parser_init').setup()
-  log("Loading Tamarin TreeSitter parser mapping")
-  require('config.treesitter_parser_map').setup()
-  log("Tamarin TreeSitter integration loaded")
-end)
-
--- Set the flag that Tamarin is initialized with TreeSitter support
-vim.g.tamarin_treesitter_initialized = true
-log("Set tamarin_treesitter_initialized flag")
-
--- Remove auto-session plugin if it's causing issues
-pcall(function()
-  log("Disabling auto-session plugin")
-  vim.g.auto_session_enabled = false
-  -- Attempt to reset the plugin if it exists
-  if package.loaded["auto-session"] then
-    package.loaded["auto-session"] = nil
-    log("Unloaded auto-session plugin")
-  end
-end)
-
--- Add command to clear session cache
-vim.api.nvim_create_user_command("ClearSession", function()
-  local session_dir = vim.fn.stdpath("data") .. "/sessions/"
-  if vim.fn.isdirectory(session_dir) == 1 then
-    vim.fn.delete(session_dir, "rf")
-    vim.fn.mkdir(session_dir, "p")
-    vim.notify("Session cache cleared", vim.log.levels.INFO)
-    log("Session cache cleared")
-  end
-end, {})
 
 -- Load lazy.nvim plugin manager
 log("Loading plugin manager")
