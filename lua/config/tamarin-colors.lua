@@ -101,68 +101,119 @@ function M.setup()
                 vim.api.nvim_set_hl(0, group, colors)
             end
 
-            -- Apply custom syntax highlighting for elements that TreeSitter might miss
-            vim.cmd([[
-                " FIRST PASS: Special tokens and operators
-                " ==========================================
-                " Assignment equals sign (neutral color)
-                syntax match tamarinAssignmentOperator /=/ containedin=ALL
-                highlight link tamarinAssignmentOperator @operator.assignment
+            -- Disable TreeSitter highlighting for specific patterns that we want to handle ourselves
+            vim.api.nvim_exec([[
+                " First clear any existing syntax to start fresh
+                syntax clear
+
+                " Basic elements for spthy files
+                " =================================
+                " Comments
+                syntax match spthyComment /\/\/.*$/ contains=@Spell
+                syntax region spthyComment start="/\*" end="\*/" fold contains=@Spell
+                highlight link spthyComment @comment
+
+                " Theory structure
+                syntax keyword spthyKeyword theory begin end
+                syntax keyword spthyKeyword rule lemma axiom builtins
+                syntax keyword spthyKeyword functions equations predicates
+                syntax keyword spthyKeyword restrictions let in
+                highlight link spthyKeyword @keyword
+
+                " Operators and punctuation
+                " =================================
+                " Equal sign in let statements - neutral color
+                syntax match spthyOperator /=/ 
+                highlight link spthyOperator @operator.assignment
+
+                " Rule arrows and brackets with the same color
+                syntax match spthyRuleArrow /--\[\|\]->/ 
+                highlight link spthyRuleArrow @operator
+
+                " Standard brackets and delimiters
+                syntax match spthyBracket /(\|)\|\[\|\]\|{\|}\|,\|;\|:/
+                highlight link spthyBracket @punctuation.bracket
+
+                " Variables and terms
+                " =================================
+                " Fresh variables (~)
+                syntax match spthyFreshVar /\~[A-Za-z0-9_]\+/ 
+                highlight link spthyFreshVar @variable.fresh
+
+                " Public variables ($)
+                syntax match spthyPublicVar /\$[A-Za-z0-9_]\+/ 
+                highlight link spthyPublicVar @variable.public
+
+                " Temporal variables (#)
+                syntax match spthyTemporalVar /#[A-Za-z0-9_]\+/ 
+                highlight link spthyTemporalVar @variable.temporal
+
+                " Variable types (:pub, :fresh, etc)
+                syntax match spthyPublicType /[A-Za-z0-9_]\+:pub/ 
+                highlight link spthyPublicType @variable.public
+
+                syntax match spthyFreshType /[A-Za-z0-9_]\+:fresh/ 
+                highlight link spthyFreshType @variable.fresh
+
+                syntax match spthyTemporalType /[A-Za-z0-9_]\+:temporal/ 
+                highlight link spthyTemporalType @variable.temporal
+
+                syntax match spthyMessageType /[A-Za-z0-9_]\+:msg/ 
+                highlight link spthyMessageType @variable.message
+
+                " Facts and predicates
+                " =================================
+                " Persistent facts (!)
+                syntax match spthyPersistentFact /![A-Za-z0-9_]\+/ 
+                highlight link spthyPersistentFact @fact.persistent
                 
-                " Action fact brackets with the same color
-                syntax match tamarinActionBrackets /--\[/ containedin=ALL
-                syntax match tamarinActionBracketsEnd /\]->/ containedin=ALL
-                highlight link tamarinActionBrackets @operator
-                highlight link tamarinActionBracketsEnd @operator
+                " Built-in facts (Fr, In, Out, K)
+                syntax keyword spthyBuiltinFact Fr In Out K
+                highlight link spthyBuiltinFact @function.builtin
+
+                " Action facts
+                syntax region spthyActionFact start=/--\[/ end=/\]->/ contains=spthyRuleArrow,spthyFreshVar,spthyPublicVar,spthyTemporalVar,spthyPersistentFact,spthyBuiltinFact,spthyNormalFact
+                highlight link spthyActionFact @fact.action
+
+                " Regular facts (not caught by others)
+                syntax match spthyNormalFact /\<[A-Z][A-Za-z0-9_]*\>/ 
+                highlight link spthyNormalFact @fact.linear
+
+                " Functions and constants
+                " =================================
+                " Function names
+                syntax match spthyFunction /\<[a-z][A-Za-z0-9_]*\>(/he=e-1
+                highlight link spthyFunction @function
+
+                " Constants in single quotes
+                syntax region spthyConstant start=/'/ end=/'/ 
+                highlight link spthyConstant @public.constant
                 
-                " SECOND PASS: Built-in facts and functions
-                " ==========================================
-                " Built-in facts (underlined but same color)
-                syntax keyword tamarinBuiltinFact Fr In Out K containedin=ALL
-                highlight link tamarinBuiltinFact @function.builtin
+                " Enable TreeSitter-based highlighting as a fallback
+                try
+                    if exists(":TSBufEnable")
+                        TSBufEnable highlight
+                    endif
+                catch
+                    " Ignore errors if TreeSitter is unavailable
+                endtry
+
+                " Always re-apply our most important syntax overrides
+                syntax match spthyFreshVar /\~[A-Za-z0-9_]\+/ containedin=ALL
+                highlight link spthyFreshVar @variable.fresh
                 
-                " THIRD PASS: Facts and structural elements
-                " ==========================================
-                " Persistent facts (catch the entire term including the !)
-                syntax match tamarinPersistentFactMark /!/ contained containedin=ALL
-                highlight link tamarinPersistentFactMark @fact.persistent
+                syntax match spthyPublicVar /\$[A-Za-z0-9_]\+/ containedin=ALL
+                highlight link spthyPublicVar @variable.public
                 
-                syntax match tamarinPersistentFact /![A-Za-z0-9_]\+/ containedin=ALL contains=tamarinPersistentFactMark
-                highlight link tamarinPersistentFact @fact.persistent
+                syntax match spthyPersistentFact /![A-Za-z0-9_]\+/ containedin=ALL
+                highlight link spthyPersistentFact @fact.persistent
                 
-                " FOURTH PASS: Variables with prefixes
-                " ====================================
-                " Dollar sign variables (ensuring prefix has same color)
-                syntax match tamarinPublicVar /\$[A-Za-z0-9_]\+/ containedin=ALL
-                highlight link tamarinPublicVar @variable.public
+                syntax keyword spthyBuiltinFact Fr In Out K containedin=ALL
+                highlight link spthyBuiltinFact @function.builtin
                 
-                " Tilde variables for fresh values
-                syntax match tamarinFreshVar /\~[A-Za-z0-9_]\+/ containedin=ALL
-                highlight link tamarinFreshVar @variable.fresh
-                
-                " Hash variables for temporal values
-                syntax match tamarinTemporalVar /#[A-Za-z0-9_]\+/ containedin=ALL
-                highlight link tamarinTemporalVar @variable.temporal
-                
-                " Type-annotated variables
-                syntax match tamarinPublicVarType /[A-Za-z0-9_]\+:pub/ containedin=ALL
-                highlight link tamarinPublicVarType @variable.public
-                
-                syntax match tamarinFreshVarType /[A-Za-z0-9_]\+:fresh/ containedin=ALL
-                highlight link tamarinFreshVarType @variable.fresh
-                
-                syntax match tamarinTemporalVarType /[A-Za-z0-9_]\+:temporal/ containedin=ALL
-                highlight link tamarinTemporalVarType @variable.temporal
-                
-                syntax match tamarinMsgVarType /[A-Za-z0-9_]\+:msg/ containedin=ALL
-                highlight link tamarinMsgVarType @variable.message
-                
-                " FIFTH PASS: Other elements
-                " ==========================
-                " Public constants with special hot pink color
-                syntax match tamarinPublicConstant /'[^']\+'/
-                highlight link tamarinPublicConstant @public.constant
-            ]])
+                syntax match spthyOperator /=/ containedin=ALL
+                highlight link spthyOperator @operator.assignment
+            ]], false)
 
             if vim.g.tamarin_highlight_debug then
                 vim.api.nvim_echo({ { "Tamarin colors applied for " .. vim.bo.filetype, "Normal" } }, false, {})
