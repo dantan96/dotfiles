@@ -18,11 +18,15 @@ local function init_log_file()
 end
 
 -- Log message to file
-local function log(msg)
+local function log(msg, notify)
   local f = io.open(TAMARIN_LOG_FILE, "a")
   if f then
     f:write(os.date("%H:%M:%S") .. " - " .. msg .. "\n")
     f:close()
+  end
+  -- Only show notifications when explicitly requested
+  if notify then
+    vim.notify(msg)
   end
 end
 
@@ -43,7 +47,7 @@ log("Registered Tamarin filetype")
 pcall(function()
   log("Loading Tamarin setup module")
   local tamarin_setup = require('config.tamarin_setup')
-  tamarin_setup.setup()
+  tamarin_setup.setup({silent = true})
   log("Tamarin setup complete")
 end)
 
@@ -89,7 +93,7 @@ end)
 
 -- Add debug commands for Tamarin
 vim.api.nvim_create_user_command("TamarinDebug", function()
-  log("Running Tamarin debug command")
+  log("Running Tamarin debug command", true)
   vim.notify("Analyzing Tamarin highlighting, please wait...", vim.log.levels.INFO)
   pcall(function() require("highlight_debugger").run() end)
 end, {})
