@@ -63,10 +63,34 @@ while true; do
   run_test "enhanced_parser_test.lua"
   test_result=$?
   
-  # If test failed, run the fix
+  # If test failed, run the fixes
   if [ $test_result -ne 0 ]; then
-    print_color "$YELLOW" "Test failed, running fix..."
-    run_fix "fix_tamarin_parser.lua"
+    print_color "$YELLOW" "Test failed, running fixes..."
+    
+    # Ask user which fix to run
+    print_color "$CYAN" "Choose fix to run:"
+    print_color "$BLUE" "1. Standard Fix (fix_tamarin_parser.lua)"
+    print_color "$BLUE" "2. Neovim-only Fix (fix_tamarin_neovim_only.lua)"
+    print_color "$BLUE" "3. Symbol Rename Fix (tamarin_parser_rename.lua)"
+    read -p "Enter choice (1-3): " fix_choice
+    
+    case $fix_choice in
+      1)
+        fix_file="fix_tamarin_parser.lua"
+        ;;
+      2)
+        fix_file="fix_tamarin_neovim_only.lua"
+        ;;
+      3)
+        fix_file="tamarin_parser_rename.lua"
+        ;;
+      *)
+        print_color "$RED" "Invalid choice, using default fix"
+        fix_file="fix_tamarin_parser.lua"
+        ;;
+    esac
+    
+    run_fix "$fix_file"
     fix_result=$?
     
     # Run test again to see if the fix worked
@@ -78,6 +102,7 @@ while true; do
         print_color "$GREEN" "✓ Fix was successful!"
       else
         print_color "$RED" "✗ Fix did not resolve all issues"
+        print_color "$YELLOW" "You may need to restart Neovim for changes to take effect"
       fi
     fi
   else
