@@ -132,6 +132,42 @@ local function generate_suggestions(problems, current_captures)
   
   local suggestions = {}
   
+  -- If no problems were found, let the user know
+  if #problems == 0 then
+    table.insert(suggestions, "# No TreeSitter Capture Issues Found")
+    table.insert(suggestions, "")
+    table.insert(suggestions, "No missing captures were detected in the syntax validation. This means that all elements in your test file are properly captured by TreeSitter rules.")
+    table.insert(suggestions, "")
+    table.insert(suggestions, "If you're still seeing syntax highlighting issues, check:")
+    table.insert(suggestions, "")
+    table.insert(suggestions, "1. That the colors in `/Users/dan/.config/nvim/lua/config/tamarin-colors.lua` correctly map to the highlight groups")
+    table.insert(suggestions, "2. That the highlight groups are actually being applied (check the validation report)")
+    table.insert(suggestions, "")
+    table.insert(suggestions, "## Current TreeSitter Captures")
+    table.insert(suggestions, "")
+    table.insert(suggestions, "Here is a summary of your current TreeSitter captures:")
+    table.insert(suggestions, "")
+    
+    -- List current captures
+    local by_prefix = {}
+    for _, capture in ipairs(current_captures) do
+      local prefix = capture.capture:match("@([^%.]+)")
+      by_prefix[prefix] = by_prefix[prefix] or {}
+      table.insert(by_prefix[prefix], capture)
+    end
+    
+    for prefix, captures in pairs(by_prefix) do
+      table.insert(suggestions, "### " .. prefix)
+      table.insert(suggestions, "")
+      for _, capture in ipairs(captures) do
+        table.insert(suggestions, "- `" .. capture.capture .. "`")
+      end
+      table.insert(suggestions, "")
+    end
+    
+    return table.concat(suggestions, "\n")
+  end
+  
   -- Group problems by type
   local missing_captures = {}
   
@@ -297,14 +333,18 @@ local function main()
     -- Generate suggestions
     local suggestions = generate_suggestions(problems, current_captures)
     
-    -- Write suggestions to file
+    -- Always write suggestions file, even if empty
     local success, write_err = write_file("treesitter_suggestions.md", suggestions)
     if not success then
       error("Error writing suggestions: " .. (write_err or "unknown error"))
     end
     
     print("Analysis complete! Found " .. #problems .. " potential issues.")
-    print("Suggestions written to treesitter_suggestions.md")
+    if #problems == 0 then
+      print("No missing TreeSitter captures detected. Syntax highlighting should be working correctly.")
+    else
+      print("Suggestions written to treesitter_suggestions.md")
+    end
     
     -- Create a backup of the current highlights.scm
     write_file(highlights_scm_path .. ".bak", highlights_content)

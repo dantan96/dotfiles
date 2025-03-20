@@ -19,9 +19,10 @@ echo ""
 echo -e "${YELLOW}Step 1: Running syntax highlighting validation...${NC}"
 echo "-----------------------------------------------"
 ./validate_highlighting.sh
+VALIDATION_EXIT=$?
 
 # Check validation exit code
-if [ $? -ne 0 ]; then
+if [ $VALIDATION_EXIT -ne 0 ]; then
   echo -e "${RED}Validation failed. Stopping workflow.${NC}"
   exit 1
 fi
@@ -40,13 +41,14 @@ echo "-------------------------------------------------------"
 # Run the analysis script with a timeout to prevent hanging
 # Using -n flag to avoid loading init files that might pause for user input
 timeout 15s nvim --headless -n -u NONE --cmd 'set t_ti= t_te= nomore' -c "luafile update_highlights.lua" > analysis_output.txt 2>&1
+ANALYSIS_EXIT=$?
 
 # Check for timeout or other errors
-if [ $? -eq 124 ]; then
+if [ $ANALYSIS_EXIT -eq 124 ]; then
   echo -e "${RED}Error: Analysis timed out after 15 seconds!${NC}"
   echo "This may indicate a hanging process or infinite loop in the analysis script."
   exit 1
-elif [ $? -ne 0 ]; then
+elif [ $ANALYSIS_EXIT -ne 0 ]; then
   echo -e "${RED}Error analyzing results:${NC}"
   cat analysis_output.txt
   exit 1
@@ -59,6 +61,7 @@ else
     echo -e "${GREEN}Suggestions have been generated in treesitter_suggestions.md${NC}"
   else
     echo -e "${YELLOW}No suggestions file was generated. This could mean no issues were found or the analysis had problems.${NC}"
+    # Don't exit with error if no suggestions were generated - this might just mean nothing to fix
   fi
 fi
 
@@ -74,4 +77,7 @@ echo "1. Review the suggestions in treesitter_suggestions.md"
 echo "2. Edit /Users/dan/.config/nvim/queries/spthy/highlights.scm"
 echo "3. Run this workflow again to validate improvements"
 echo ""
-echo -e "${BLUE}==========================================================${NC}" 
+echo -e "${BLUE}==========================================================${NC}"
+
+# Exit successfully
+exit 0 
