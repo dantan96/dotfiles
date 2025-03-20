@@ -17,21 +17,27 @@ let s:colors = luaeval('require("config.spthy-colorscheme").colors')
 " Helper function to convert a color from our table to vim highlighting
 function! s:hl(group, color_key) 
   let l:fg = s:colors[a:color_key].fg
-  let l:attrs = ""
+  let l:gui_attrs = []
   
   if get(s:colors[a:color_key], 'bold', v:false)
-    let l:attrs .= " bold"
+    call add(l:gui_attrs, "bold")
   endif
   
   if get(s:colors[a:color_key], 'italic', v:false)
-    let l:attrs .= " italic"
+    call add(l:gui_attrs, "italic")
   endif
   
   if get(s:colors[a:color_key], 'underline', v:false)
-    let l:attrs .= " underline"
+    call add(l:gui_attrs, "underline")
   endif
   
-  execute "highlight " . a:group . " guifg=" . l:fg . " " . l:attrs
+  let l:cmd = "highlight " . a:group . " guifg=" . l:fg
+  
+  if !empty(l:gui_attrs)
+    let l:cmd .= " gui=" . join(l:gui_attrs, ",")
+  endif
+  
+  execute l:cmd
 endfunction
 
 " Basic elements for spthy files
