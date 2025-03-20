@@ -83,3 +83,8 @@ vim.keymap.set("n", "<leader>lx", function()
     underline = isLspDiagnosticsVisible
   })
 end)
+
+-- Add Tamarin Spthy TreeSitter parser integration
+-- This solves the "Failed to load parser: symbol not found" error
+require('config.spthy_parser_init').setup()
+require('config.treesitter_parser_map').setup()
