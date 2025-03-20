@@ -18,20 +18,20 @@ local function is_treesitter_available()
     return false
   end
 
-  -- Check if the tamarin parser exists
+  -- Check if the spthy parser exists
   local parser_ok = pcall(function()
-    return vim.treesitter.get_parser(0, "tamarin")
+    return vim.treesitter.get_parser(0, "spthy")
   end)
   
   if not parser_ok then
-    debug_print("Tamarin parser not available")
+    debug_print("Spthy parser not available")
     return false
   end
   
   -- Check if query file exists and is valid
   local query_path = vim.api.nvim_get_runtime_file("queries/spthy/highlights.scm", false)[1]
   if not query_path then
-    debug_print("Tamarin query file not found")
+    debug_print("Spthy query file not found")
     return false
   end
   
@@ -46,7 +46,7 @@ local function is_treesitter_available()
   end)
   
   if not query_ok then
-    debug_print("Tamarin query file is invalid")
+    debug_print("Spthy query file is invalid")
     return false
   end
   
@@ -57,9 +57,9 @@ end
 local function apply_treesitter_highlighting()
   vim.g.tamarin_treesitter_initialized = true
   
-  -- Register language if not already registered
+  -- Register language if needed (using spthy directly)
   pcall(function()
-    vim.treesitter.language.register('tamarin', { 'spthy', 'sapic' })
+    vim.treesitter.language.register('spthy', 'spthy')
   end)
   
   -- Ensure highlighting is enabled
@@ -77,7 +77,7 @@ end
 local function apply_fallback_highlighting()
   vim.g.tamarin_treesitter_initialized = false
   
-  -- The actual highlighting rules are in ftplugin/tamarin.lua
+  -- The actual highlighting rules are in ftplugin/spthy.vim
   vim.cmd("syntax enable")
   
   debug_print("Fallback syntax highlighting enabled for buffer")
@@ -96,7 +96,7 @@ function M.setup()
   local augroup = vim.api.nvim_create_augroup("TamarinHighlighting", { clear = true })
   vim.api.nvim_create_autocmd("FileType", {
     group = augroup,
-    pattern = "tamarin",
+    pattern = "spthy",
     callback = function()
       if is_treesitter_available() then
         apply_treesitter_highlighting()
