@@ -58,6 +58,7 @@ function M.setup()
         -- BRACKETS, PUNCTUATION, OPERATORS
         ---------------------------------------------------
         ["@operator"]                 = colors.slateGrayBold,             -- Action brackets: --[ and ]->
+        ["@operator.assignment"]      = colors.slateGrayPlain,            -- Assignment operators: = in let statements
         ["@punctuation.bracket"]      = colors.slateGrayPlain,            -- Regular brackets: (), [], <>
         ["@punctuation.delimiter"]    = colors.slateGrayPlain,            -- Punctuation: ,.;:
         ["@punctuation.special"]      = colors.slateGrayBold,             -- Special punctuation: -->, ==>
@@ -102,52 +103,65 @@ function M.setup()
 
             -- Apply custom syntax highlighting for elements that TreeSitter might miss
             vim.cmd([[
-                " Custom syntax matching for variable prefixes
+                " FIRST PASS: Special tokens and operators
+                " ==========================================
+                " Assignment equals sign (neutral color)
+                syntax match tamarinAssignmentOperator /=/ containedin=ALL
+                highlight link tamarinAssignmentOperator @operator.assignment
+                
+                " Action fact brackets with the same color
+                syntax match tamarinActionBrackets /--\[/ containedin=ALL
+                syntax match tamarinActionBracketsEnd /\]->/ containedin=ALL
+                highlight link tamarinActionBrackets @operator
+                highlight link tamarinActionBracketsEnd @operator
+                
+                " SECOND PASS: Built-in facts and functions
+                " ==========================================
+                " Built-in facts (underlined but same color)
+                syntax keyword tamarinBuiltinFact Fr In Out K containedin=ALL
+                highlight link tamarinBuiltinFact @function.builtin
+                
+                " THIRD PASS: Facts and structural elements
+                " ==========================================
+                " Persistent facts (catch the entire term including the !)
+                syntax match tamarinPersistentFactMark /!/ contained containedin=ALL
+                highlight link tamarinPersistentFactMark @fact.persistent
+                
+                syntax match tamarinPersistentFact /![A-Za-z0-9_]\+/ containedin=ALL contains=tamarinPersistentFactMark
+                highlight link tamarinPersistentFact @fact.persistent
+                
+                " FOURTH PASS: Variables with prefixes
+                " ====================================
                 " Dollar sign variables (ensuring prefix has same color)
-                syntax match tamarinPublicVar /\$[A-Za-z0-9_]\+/
+                syntax match tamarinPublicVar /\$[A-Za-z0-9_]\+/ containedin=ALL
                 highlight link tamarinPublicVar @variable.public
                 
                 " Tilde variables for fresh values
-                syntax match tamarinFreshVar /\~[A-Za-z0-9_]\+/
+                syntax match tamarinFreshVar /\~[A-Za-z0-9_]\+/ containedin=ALL
                 highlight link tamarinFreshVar @variable.fresh
                 
                 " Hash variables for temporal values
-                syntax match tamarinTemporalVar /#[A-Za-z0-9_]\+/
+                syntax match tamarinTemporalVar /#[A-Za-z0-9_]\+/ containedin=ALL
                 highlight link tamarinTemporalVar @variable.temporal
                 
                 " Type-annotated variables
-                syntax match tamarinPublicVarType /[A-Za-z0-9_]\+:pub/
+                syntax match tamarinPublicVarType /[A-Za-z0-9_]\+:pub/ containedin=ALL
                 highlight link tamarinPublicVarType @variable.public
                 
-                syntax match tamarinFreshVarType /[A-Za-z0-9_]\+:fresh/
+                syntax match tamarinFreshVarType /[A-Za-z0-9_]\+:fresh/ containedin=ALL
                 highlight link tamarinFreshVarType @variable.fresh
                 
-                syntax match tamarinTemporalVarType /[A-Za-z0-9_]\+:temporal/
+                syntax match tamarinTemporalVarType /[A-Za-z0-9_]\+:temporal/ containedin=ALL
                 highlight link tamarinTemporalVarType @variable.temporal
                 
-                syntax match tamarinMsgVarType /[A-Za-z0-9_]\+:msg/
+                syntax match tamarinMsgVarType /[A-Za-z0-9_]\+:msg/ containedin=ALL
                 highlight link tamarinMsgVarType @variable.message
                 
-                " Built-in facts (underlined but same color)
-                syntax keyword tamarinBuiltinFact Fr In Out K
-                highlight link tamarinBuiltinFact @function.builtin
-                
-                " Make the ! part of persistent facts the same color
-                syntax match tamarinPersistentFactMark /!/ contained
-                highlight link tamarinPersistentFactMark @fact.persistent
-                
-                syntax match tamarinPersistentFact /![A-Za-z0-9_]\+/ contains=tamarinPersistentFactMark
-                highlight link tamarinPersistentFact @fact.persistent
-                
+                " FIFTH PASS: Other elements
+                " ==========================
                 " Public constants with special hot pink color
                 syntax match tamarinPublicConstant /'[^']\+'/
                 highlight link tamarinPublicConstant @public.constant
-                
-                " Action fact brackets with the same color
-                syntax match tamarinActionBrackets /--\[/ 
-                syntax match tamarinActionBracketsEnd /\]->/ 
-                highlight link tamarinActionBrackets @operator
-                highlight link tamarinActionBracketsEnd @operator
             ]])
 
             if vim.g.tamarin_highlight_debug then
@@ -203,6 +217,7 @@ FUNCTIONS AND MACROS:
 
 BRACKETS, PUNCTUATION, OPERATORS:
   @operator            - General operators
+  @operator.assignment - Assignment operators (=)
   @punctuation.bracket - Regular brackets ((), [], <>)
   @punctuation.delimiter - Punctuation (,.:;)
   @punctuation.special - Special punctuation (-->)
