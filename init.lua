@@ -43,22 +43,9 @@ vim.filetype.add({
 })
 log("Registered Tamarin filetype")
 
--- Explicitly register spthy TreeSitter parser (before plugins are loaded)
+-- Setup spthy support with the streamlined module
 pcall(function()
-  -- Add parser directory to the runtime path
-  local parser_path = vim.fn.stdpath("config") .. "/parser"
-  vim.opt.runtimepath:append(parser_path)
-
-  -- If TreeSitter is available, directly register the language
-  if vim.treesitter and vim.treesitter.language then
-    vim.treesitter.language.register('spthy', 'spthy')
-    log("Directly registered spthy parser with TreeSitter")
-  end
-end)
-
--- Apply spthy colors
-pcall(function()
-  require('config.tamarin-colors').setup()
+  require('config.spthy_setup').setup()
 end)
 
 -- Load lazy.nvim plugin manager
