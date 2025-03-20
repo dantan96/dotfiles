@@ -52,66 +52,72 @@ run_fix() {
 
 # Main loop
 print_color "$CYAN" "=== Tamarin Parser Test and Fix Loop ==="
-print_color "$BLUE" "Press Ctrl+C to exit"
+print_color "$BLUE" "Running automated tests and fixes..."
 
+# Maximum number of iterations before giving up
+MAX_ITERATIONS=5
 iteration=1
 
-while true; do
-  print_color "$CYAN" "=== Iteration $iteration ==="
+# Array of fix scripts to try in order
+FIX_SCRIPTS=("fix_tamarin_neovim_only.lua" "fix_tamarin_parser.lua" "tamarin_parser_rename.lua")
+
+while [ $iteration -le $MAX_ITERATIONS ]; do
+  print_color "$CYAN" "=== Iteration $iteration/$MAX_ITERATIONS ==="
   
   # Run the enhanced parser test
   run_test "enhanced_parser_test.lua"
   test_result=$?
   
-  # If test failed, run the fixes
+  # If test failed, try each fix in sequence
   if [ $test_result -ne 0 ]; then
-    print_color "$YELLOW" "Test failed, running fixes..."
+    print_color "$YELLOW" "Test failed, trying fixes in sequence..."
     
-    # Ask user which fix to run
-    print_color "$CYAN" "Choose fix to run:"
-    print_color "$BLUE" "1. Standard Fix (fix_tamarin_parser.lua)"
-    print_color "$BLUE" "2. Neovim-only Fix (fix_tamarin_neovim_only.lua)"
-    print_color "$BLUE" "3. Symbol Rename Fix (tamarin_parser_rename.lua)"
-    read -p "Enter choice (1-3): " fix_choice
+    fix_success=false
     
-    case $fix_choice in
-      1)
-        fix_file="fix_tamarin_parser.lua"
-        ;;
-      2)
-        fix_file="fix_tamarin_neovim_only.lua"
-        ;;
-      3)
-        fix_file="tamarin_parser_rename.lua"
-        ;;
-      *)
-        print_color "$RED" "Invalid choice, using default fix"
-        fix_file="fix_tamarin_parser.lua"
-        ;;
-    esac
-    
-    run_fix "$fix_file"
-    fix_result=$?
-    
-    # Run test again to see if the fix worked
-    if [ $fix_result -eq 0 ]; then
-      print_color "$BLUE" "Running test again to verify fix..."
-      run_test "enhanced_parser_test.lua"
+    # Try each fix script until one succeeds
+    for fix_file in "${FIX_SCRIPTS[@]}"; do
+      print_color "$CYAN" "Trying fix: $fix_file"
+      run_fix "$fix_file"
+      fix_result=$?
       
-      if [ $? -eq 0 ]; then
-        print_color "$GREEN" "✓ Fix was successful!"
+      # Run test again to see if the fix worked
+      if [ $fix_result -eq 0 ]; then
+        print_color "$BLUE" "Running test again to verify fix..."
+        run_test "enhanced_parser_test.lua"
+        
+        if [ $? -eq 0 ]; then
+          print_color "$GREEN" "✓ Fix was successful with $fix_file!"
+          fix_success=true
+          break
+        else
+          print_color "$RED" "✗ Fix with $fix_file did not resolve all issues"
+        fi
       else
-        print_color "$RED" "✗ Fix did not resolve all issues"
-        print_color "$YELLOW" "You may need to restart Neovim for changes to take effect"
+        print_color "$RED" "✗ Fix $fix_file failed to run correctly"
       fi
+    done
+    
+    # If none of the fixes worked, continue to next iteration
+    if [ "$fix_success" = false ]; then
+      print_color "$YELLOW" "All fixes attempted without success. Continuing to next iteration..."
+    else
+      # A fix was successful, we can exit
+      print_color "$GREEN" "A successful fix was applied! Exiting loop."
+      exit 0
     fi
+    
   else
     print_color "$GREEN" "All tests passed! No fixes needed."
+    exit 0
   fi
   
-  # Wait for user input to continue or exit
-  print_color "$BLUE" "Press Enter to run again or Ctrl+C to exit"
-  read -r
+  # Sleep briefly before next iteration
+  sleep 2
   
   ((iteration++))
-done 
+done
+
+# If we get here, we've reached the maximum iterations without success
+print_color "$RED" "Maximum iterations ($MAX_ITERATIONS) reached without success."
+print_color "$YELLOW" "You may need to manually restart Neovim for changes to take effect, or investigate further."
+exit 1 
