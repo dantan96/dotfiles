@@ -64,8 +64,8 @@ FIX_SCRIPTS=("fix_tamarin_neovim_only.lua" "fix_tamarin_parser.lua" "tamarin_par
 while [ $iteration -le $MAX_ITERATIONS ]; do
   print_color "$CYAN" "=== Iteration $iteration/$MAX_ITERATIONS ==="
   
-  # Run the enhanced parser test
-  run_test "enhanced_parser_test.lua"
+  # Run the simple tamarin test
+  run_test "simple_tamarin_test.lua"
   test_result=$?
   
   # If test failed, try each fix in sequence
@@ -83,7 +83,7 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
       # Run test again to see if the fix worked
       if [ $fix_result -eq 0 ]; then
         print_color "$BLUE" "Running test again to verify fix..."
-        run_test "enhanced_parser_test.lua"
+        run_test "simple_tamarin_test.lua"
         
         if [ $? -eq 0 ]; then
           print_color "$GREEN" "✓ Fix was successful with $fix_file!"
