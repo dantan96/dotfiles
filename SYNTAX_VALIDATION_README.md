@@ -17,6 +17,13 @@ This system provides a complete workflow to:
 2. Identify discrepancies between expected and actual colors
 3. Suggest improvements to TreeSitter's highlight configuration
 
+## Features
+
+- **Fully Automated**: All scripts run headlessly without requiring any user intervention
+- **Timeout Protection**: Built-in timeout mechanisms prevent scripts from hanging indefinitely
+- **Comprehensive Reporting**: Detailed validation reports and suggested improvements
+- **Safe Execution**: Automatic backup of configuration files before making changes
+
 ## Components
 
 ### Validation Scripts
