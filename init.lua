@@ -120,4 +120,10 @@ vim.api.nvim_create_user_command("TamarinDebug", function()
   pcall(function() require("highlight_debugger").run() end)
 end, {})
 
+-- Add TreeSitter info command
+pcall(function()
+  require('ts_info').setup()
+  log("TreeSitter info command registered")
+end)
+
 log("Initialization complete")
