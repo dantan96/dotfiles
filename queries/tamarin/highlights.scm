@@ -1,1 +1,0 @@
-/Users/dan/.config/nvim/queries/spthy/highlights.scm

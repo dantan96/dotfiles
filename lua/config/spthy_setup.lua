@@ -13,10 +13,10 @@ function M.setup()
       sapic = "spthy"
     },
   })
-  
+
   -- 2. Add parser directory to runtimepath to ensure parser is found
   local parser_path = vim.fn.stdpath("config") .. "/parser"
-  
+
   -- Check if the path is already in runtimepath
   local rtp = vim.opt.runtimepath:get()
   local in_rtp = false
@@ -26,18 +26,18 @@ function M.setup()
       break
     end
   end
-  
+
   -- Add to runtimepath if not already there
   if not in_rtp then
     vim.opt.runtimepath:prepend(parser_path)
   end
-  
+
   -- 3. Ensure the parser is available and properly registered
   pcall(function()
     -- Check if spthy parser exists in site directory
     local parser_dir = vim.fn.stdpath('data') .. '/site/parser'
     local spthy_path = parser_dir .. '/spthy.so'
-    
+
     -- Register language with TreeSitter if available
     if vim.fn.filereadable(spthy_path) == 1 and vim.treesitter and vim.treesitter.language then
       vim.treesitter.language.register('spthy', 'spthy')
@@ -50,7 +50,7 @@ function M.setup()
     callback = function()
       -- Make sure tamarin-colors is loaded first
       require("config.tamarin-colors").setup()
-      
+
       -- Explicitly enable TreeSitter for this buffer
       pcall(function()
         if vim.treesitter and vim.treesitter.start then
@@ -61,15 +61,15 @@ function M.setup()
       end)
     end,
   })
-  
+
   -- 5. Register with nvim-treesitter if it's available
   pcall(function()
     local has_parsers, parsers = pcall(require, "nvim-treesitter.parsers")
     if has_parsers and not parsers.get_parser_configs().spthy then
       parsers.get_parser_configs().spthy = {
-        install_info = { 
+        install_info = {
           url = "https://github.com/tree-sitter/tree-sitter-spthy",
-          files = {"src/parser.c"},
+          files = { "src/parser.c" },
           branch = "main",
         },
         filetype = "spthy",
@@ -77,8 +77,9 @@ function M.setup()
       }
     end
   end)
-  
+
   return true
 end
 
-return M 
+return M
+
