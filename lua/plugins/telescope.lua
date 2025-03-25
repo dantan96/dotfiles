@@ -13,8 +13,10 @@ return {
         }
       }
       require("telescope").load_extension("fzf")
-      vim.keymap.set("n", "<space>fh", require("telescope.builtin").help_tags)
-      vim.keymap.set("n", "<space>ff", require("telescope.builtin").find_files)
+      local builtin = require('telescope.builtin')
+      vim.keymap.set("n", "<space>fh", builtin.help_tags)
+      vim.keymap.set("n", "<space>ff", builtin.find_files)
+      vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
       vim.keymap.set("n", "<space>en", function()
         require("telescope.builtin").find_files {
           cwd = vim.fn.stdpath("config")

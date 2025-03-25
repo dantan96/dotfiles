@@ -15,6 +15,8 @@ return {
     -- Basic treesitter setup
     require("nvim-treesitter.configs").setup({
       ensure_installed = {
+        "query",
+
         -- Shell/Terminal
         "bash",
         "fish",
@@ -88,7 +90,7 @@ return {
     local parser_config = require "nvim-treesitter.parsers".get_parser_configs()
     parser_config.spthy = {
       install_info = {
-        url = "/Users/dan/temporary-repos/tamarin-prover/tree-sitter/tree-sitter-spthy",
+        url = "/home/daniel.tanios/tamarin-prover/tree-sitter/tree-sitter-spthy",
         files = { "src/parser.c", "src/scanner.c" },
         -- optional entries:
         branch = "develop",                     -- default branch in case of git repo if different from master

@@ -49,7 +49,8 @@ function M.setup()
     pattern = "spthy",
     callback = function()
       -- Make sure tamarin-colors is loaded first
-      require("config.tamarin-colors").setup()
+      local tc = require("config.tamarin-colors")
+      tc.setup()
 
       -- Explicitly enable TreeSitter for this buffer
       pcall(function()
@@ -59,27 +60,17 @@ function M.setup()
           vim.cmd('TSBufEnable highlight')
         end
       end)
+
+      local highlights = tc.highlights
+      for group, color in pairs(highlights) do
+        local groupSuffix = string.sub(group, 2)
+        local spthyGroup = "@spthy" .. groupSuffix
+        vim.api.nvim_set_hl(0, spthyGroup, color)
+      end
     end,
   })
-
-  -- 5. Register with nvim-treesitter if it's available
-  pcall(function()
-    local has_parsers, parsers = pcall(require, "nvim-treesitter.parsers")
-    if has_parsers and not parsers.get_parser_configs().spthy then
-      parsers.get_parser_configs().spthy = {
-        install_info = {
-          url = "https://github.com/tree-sitter/tree-sitter-spthy",
-          files = { "src/parser.c" },
-          branch = "main",
-        },
-        filetype = "spthy",
-        maintainers = { "tree-sitter" },
-      }
-    end
-  end)
 
   return true
 end
 
 return M
-

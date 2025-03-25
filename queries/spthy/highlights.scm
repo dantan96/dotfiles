@@ -2,10 +2,10 @@
 ;; Using validated node types detected through syntax tree analysis
 ;; Implementing many of the highlighting groups defined in tamarin-highlights.lua
 
-(single_comment) @comment
-(multi_comment) @comment
+(single_comment) @spthycomment
+(multi_comment) @spthycomment
 
-(pub_name) @public.constant
+(pub_name) @spthypublic.constant
 
 ;; Keywords - using direct token identification
 [
@@ -13,7 +13,7 @@
   "begin"
   "end"
   "equations"
-] @keyword
+] @spthykeyword
 
 
 [
@@ -21,12 +21,12 @@
  "functions"
  "predicates"
  "options"
-] @keyword.module
+] @spthykeyword.module
 
 [
  "all-traces"
  "exists-trace"
-] @keyword.trace_quantifier
+] @spthykeyword.trace_quantifier
 
 
 [
@@ -34,7 +34,7 @@
  "Ex"
  "∀"
  "∃"
-] @keyword.quantifier
+] @spthykeyword.quantifier
 
 
 [
@@ -42,7 +42,7 @@
  "lemma"
  "axiom"
  "restriction"
-] @keyword.function
+] @spthykeyword.function
 
 
 [
@@ -50,7 +50,7 @@
  "presort"
  "prio"
  "deprio"
-] @keyword.tactic
+] @spthykeyword.tactic
 
 
 [
@@ -58,11 +58,13 @@
  "simplify"
  "solve"
  "contradiction"
-] @keyword.tactic.value
+] @spthykeyword.tactic.value
 
 [
  "macros"
-] @keyword.macro
+ "let"
+ "in"
+] @spthykeyword.macro
 
 
 [
@@ -70,60 +72,64 @@
  "#endif"
  "#define"
  "#include"
-] @preproc
+] @spthypreproc
 
-;((ident) @preproc.identifier
-; (#has-parent? @preproc 
+;((ident) @spthypreproc.identifier
+; (#has-parent? @spthypreproc 
 
+(tuple_term) @spthytuple
 
 ;; Identifiers - using the ident node type with text predicates for differentiation
 ;; Theory name
-((ident) @type
- (#has-parent? @type theory))
+((ident) @spthytype
+ (#has-parent? @spthytype theory))
 
-(function_pub function_identifier: (ident)) @function
+(function_untyped function_identifier: (ident)) @spthyfunction
 
-((ident) @function
- (#has-parent? @function function_pub))
+((ident) @spthyfunction
+(#has-parent? @spthyfunction function_untyped))
 
-((ident) @function
- (#has-parent? @function function_private))
+;; ((ident) @spthyfunction
+;;  (#has-parent? @spthyfunction function_private))
 
-((natural) @function.arity
- (#has-parent? @function.arity function_pub))
+((natural) @spthyfunction.arity
+(#has-parent? @spthyfunction.arity function_untyped))
 
-((natural) @function.arity
- (#has-parent? @function.arity function_private))
+;; ((natural) @spthyfunction.arity
+;;  (#has-parent? @spthyfunction.arity function_private))
 
 ;; Rule identifiers - using parent and position checking
-((ident) @function.rule
- (#has-parent? @function.rule simple_rule))
+((ident) @spthyfunction.rule
+ (#has-parent? @spthyfunction.rule simple_rule))
 
-((ident) @function.rule
- (#has-parent? @function.rule lemma))
+((ident) @spthyfunction.rule
+ (#has-parent? @spthyfunction.rule lemma))
 
-((built_in) @function.rule
- (#has-parent? @function.rule built_ins))
+((built_in) @spthyfunction.rule
+ (#has-parent? @spthyfunction.rule built_ins))
 
 
 
 ;; Variable identifiers in terms
-((ident) @variable.message
- (#has-parent? @variable.message msg_var_or_nullary_fun))
+((ident) @spthyvariable.message
+ (#has-parent? @spthyvariable.message msg_var_or_nullary_fun))
 
-(fresh_var variable_identifier: (ident)) @variable.fresh
-(pub_var variable_identifier: (ident)) @variable.public
-(temporal_var variable_identifier: (ident)) @variable.temporal
+(fresh_var variable_identifier: (ident)) @spthyvariable.fresh
+(pub_var variable_identifier: (ident)) @spthyvariable.public
+(temporal_var variable_identifier: (ident)) @spthyvariable.temporal
 
 ;; Function identifiers for built-in facts
-((ident) @fact.builtin
- (#has-parent? @fact.builtin linear_fact)
- (#any-of? @fact.builtin "In" "Out" "Fr" "K"))
+((ident) @spthyfact.builtin
+ (#has-parent? @spthyfact.builtin linear_fact)
+ (#any-of? @spthyfact.builtin "In" "Out" "Fr" "K" "KU" "KD"))
+
+((ident) @spthyfunction
+ (#has-parent? @spthyfunction nary_app))
 
 ;; Function identifiers for crypto operations
-((ident) @function.builtin
- (#has-parent? @function.builtin nary_app)
- (#any-of? @function.builtin 
+((ident) @spthyfunction.builtin
+ (#has-parent? @spthyfunction.builtin nary_app)
+ (#any-of? @spthyfunction.builtin 
   "aenc" 
   "adec" 
   "senc" 
@@ -147,67 +153,82 @@
   ))
 
 
-((ident) @function.builtin
- (#has-parent? @function.builtin function_pub)
- (#any-of? @function.builtin "aenc" "adec" "senc" "sdec" "mac" "kdf" "pk" "h" "verify" "sign" "true" "revealSign" "revealVerify" "getMessage" "inv" "1" "zero" "⊕" "XOR" "zero"))
+((ident) @spthyfunction.builtin
+ (#has-parent? @spthyfunction.builtin function_pub)
+ (#any-of? @spthyfunction.builtin "aenc" "adec" "senc" "sdec" "mac" "kdf" "pk" "h" "verify" "sign" "true" "revealSign" "revealVerify" "getMessage" "inv" "1" "zero" "⊕" "XOR" "zero"))
 
-((ident) @function.builtin
- (#has-parent? @function.builtin function_private)
- (#any-of? @function.builtin "aenc" "adec" "senc" "sdec" "mac" "kdf" "pk" "h" "verify" "sign" "true" "revealSign" "revealVerify" "getMessage" "inv" "1" "zero" "⊕" "XOR" "zero"))
+((ident) @spthyfunction.builtin
+ (#has-parent? @spthyfunction.builtin function_private)
+ (#any-of? @spthyfunction.builtin "aenc" "adec" "senc" "sdec" "mac" "kdf" "pk" "h" "verify" "sign" "true" "revealSign" "revealVerify" "getMessage" "inv" "1" "zero" "⊕" "XOR" "zero"))
 
 ;; Facts - with different styles
-(action_fact (linear_fact)) @fact.action
+((ident) @spthyfact.action
+(#has-parent? @spthyfact.action linear_fact)
+(#has-ancestor? @spthyfact.action action_fact))
+;; (action_fact (linear_fact)) @spthyfact.action
 
-((ident) @fact.linear
- (#has-parent? @fact.linear linear_fact)
- (#not-has-ancestor? @fact.linear action_fact))
-
-
-((ident) @function.rule
- (#has-parent? @function.rule simple_rule))
-
-((ident) @fact.persistent
-(#has-parent? @fact.persistent persistent_fact)
-(#not-has-ancestor? @fact.persistent linear_fact)
-(#not-has-ancestor? @fact.persistent nary_app)
-(#not-has-ancestor? @fact.persistent action_fact))
+((ident) @spthyfact.linear
+ (#has-parent? @spthyfact.linear linear_fact)
+ (#not-has-ancestor? @spthyfact.linear action_fact))
 
 
-("!" @fact.persistent
- (#has-parent? @fact.persistent premise))
+((ident) @spthyfunction.rule
+ (#has-parent? @spthyfunction.rule simple_rule))
 
-("!" @fact.persistent
- (#has-parent? @fact.persistent conclusion))
+((ident) @spthyfact.persistent
+(#has-parent? @spthyfact.persistent persistent_fact)
+(#not-has-ancestor? @spthyfact.persistent linear_fact)
+(#not-has-ancestor? @spthyfact.persistent nary_app)
+(#not-has-ancestor? @spthyfact.persistent action_fact))
+
+
+("!" @spthyfact.persistent
+ (#has-parent? @spthyfact.persistent premise))
+
+("!" @spthyfact.persistent
+ (#has-parent? @spthyfact.persistent conclusion))
 
 
 ;; Rule structure elements
-(premise) @premise
-(conclusion) @conclusion
-(simple_rule) @rule.simple
+(premise) @spthypremise
+(conclusion) @spthyconclusion
+(simple_rule) @spthyrule.simple
 
 
 ;; Special tokens
-["--[" "]->"] @operator
-["="] @operator.assignment
-["^"] @operator.exponentiation
-["&" "|" "not" "==>"] @operator.logical
-["@"] @operator.at
-["[" "]" "<" ">" "(" ")"] @punctuation.bracket
-["," ";" ":" "."] @punctuation.delimiter
-["-->"] @punctuation.special
+["--[" "]->"] @spthyoperator
+["="] @spthyoperator.assignment
+["^"] @spthyoperator.exponentiation
+["&" "|" "not" ] @spthyoperator.logical
+["==>"] @spthyoperator.implies
+["[" "]" "<" ">" "(" ")"] @spthypunctuation.bracket
+["[" "]"] @spthypunctuation.square_bracket
+["<" ">"] @spthypunctuation.angle_bracket
+["(" ")"] @spthypunctuation.round_bracket
+["@"] @spthyoperator.at
+(["," ";" ":" "."] @spthypunctuation.delimiter
+ (#not-has-ancestor? @spthypunctuation.delimiter tuple_term))
+(["," ":" ";"] @spthypunctuation.delimiter_sans_period 
+ (#not-has-ancestor? @spthypunctuation.delimiter_sans_period tuple_term))
+["."] @spthypunctuation.delimiter.period
+([","] @spthypunctuation.delimiter.comma
+ (#not-has-ancestor? @spthypunctuation.delimiter.comma tuple_term))
+[";"] @spthypunctuation.delimiter.semicolon
+[":"] @spthypunctuation.delimiter.colon
+["-->"] @spthypunctuation.special
 
 ;; Trace elements
-(trace_quantifier) @keyword.quantifier
+(trace_quantifier) @spthykeyword.quantifier
 
 ;; Message components and terms
 ;; When parent node is exp_term, mul_term, etc.
-;((ident) @variable.message
-; (#has-ancestor? @variable.message mset_term))
+;((ident) @spthyvariable.message
+; (#has-ancestor? @spthyvariable.message mset_term))
 
 ;; When ident is inside argument of a linear_fact
-;((ident) @variable.message
-; (#has-ancestor? @variable.message arguments)
-; (#has-ancestor? @variable.message linear_fact))
+;((ident) @spthyvariable.message
+; (#has-ancestor? @spthyvariable.message arguments)
+; (#has-ancestor? @spthyvariable.message linear_fact))
 
 ;; Error nodes for debugging
-(ERROR) @error 
+(ERROR) @spthyerror 
