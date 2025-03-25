@@ -94,19 +94,13 @@
 ((ident) @spthytype
  (#has-parent? @spthytype theory))
 
-(function_pub function_identifier: (ident)) @spthyfunction
+(function_untyped function_identifier: (ident)) @spthyfunction
 
 ((ident) @spthyfunction
-(#has-parent? @spthyfunction function_pub))
-
-((ident) @spthyfunction
-(#has-parent? @spthyfunction function_private))
+(#has-parent? @spthyfunction function_untyped))
 
 ((natural) @spthyfunction.arity
-(#has-parent? @spthyfunction.arity function_pub))
-
-((natural) @spthyfunction.arity
-(#has-parent? @spthyfunction.arity function_private))
+(#has-parent? @spthyfunction.arity function_untyped))
 
 ;; Rule identifiers - using parent and position checking
 ((ident) @spthyfunction.rule
@@ -124,8 +118,6 @@
 
 ((built_in) @spthyfunction.rule
  (#has-parent? @spthyfunction.rule built_ins))
-
-
 
 ;; Variable identifiers in terms
 
