@@ -1,6 +1,9 @@
 # macOS system files
 .DS_Store
 
+# this ugly-ass directory
+documentation/*
+
 # Test files
 test.spthy
 *.swp
