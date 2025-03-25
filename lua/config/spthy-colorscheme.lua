@@ -25,9 +25,12 @@ M.colors = {
   deepGreen                                = { fg = "#006400", bold = false },                                    -- Deep green for public variables, rich and forest-like
   mediumGreen                              = { fg = "#04a12b", bold = false },                                    -- Medium green for public variables, rich and forest-like
   goldBold                                 = { fg = "#FFD700", bold = true },                                     -- Gold - for rule/theory names with bold
+  goldBoldItalic                           = { fg = "#FFD700", bold = true, italic = true },                      -- Gold - for rule/theory names with bold
   goldBoldUnderlined                       = { fg = "#FFD700", bold = true, underline = true },                   -- Gold with underline for builtins
+  goldBoldUnderdotted                      = { fg = "#FFD700", bold = true, underdotted = true },                 -- Gold with underline for builtins
   goldItalic                               = { fg = "#FFD700", bold = false, italic = true },                     -- Gold with italic for theory names
-  goldItalicUnderdotted                    = { fg = "#FFD700", bold = false, italic = true, underdotted = true }, -- Gold with italic for theory names
+  darkGold                                 = { fg = "#908070", bold = false },                                    -- Gold - for rule/theory names with bold
+  darkGoldBold                             = { fg = "#908070", bold = true },                                     -- Gold - for rule/theory names with bold
   lightGold                                = { fg = "#FFE766", bold = false },                                    -- Gold - for rule/theory names with bold
   lightGoldBold                            = { fg = "#FFE766", bold = true },                                     -- Gold - for rule/theory names with bold
   lightGoldBoldUnderlined                  = { fg = "#FFE766", bold = true, underline = true },                   -- Gold with underline for builtins
@@ -36,7 +39,7 @@ M.colors = {
   lightGoldItalic                          = { fg = "#FFE766", bold = false, italic = true },                     -- Gold with italic for theory names
   grayItalic                               = { fg = "#777777", italic = true },                                   -- Gray - for comments
   grayPlain                                = { fg = "#888888", bold = false },                                    -- Gray - for logical operators
-  hotPink                                  = { fg = "#FF1493", bold = false },                                    -- Deep Pink - for public constants
+  hotPink                                  = { fg = "#FF1493", italic = true, bold = false, nocombine = true },   -- Deep Pink - for public constants
   hotPinkBold                              = { fg = "#FF1493", bold = true },                                     -- Deep Pink - for public constants
   hotPinkPlain                             = { fg = "#FF69B4", bold = false },                                    -- Hot Pink - for fresh variables (~k)
   lightPinkPlain                           = { fg = "#FFB6C1", bold = false },                                    -- Light Pink - for action facts
@@ -85,7 +88,7 @@ M.colors = {
   flamingoUnderdotted                      = { fg = "#f2cdcd", underdotted = true },
   flamingoUnderlined                       = { fg = "#f2cdcd", underline = true },
   flamingoUnderlinedUnderdotted            = { fg = "#f2cdcd", underline = true, underdotted = true },
-  flamingoItalic                           = { fg = "#f2cdcd", italic = true },
+  flamingoItalic                           = { fg = "#f2cdcd", italic = true, bold = false },
   flamingoItalicUnderdotted                = { fg = "#f2cdcd", italic = true, underdotted = true },
   flamingoItalicUnderlined                 = { fg = "#f2cdcd", italic = true, underline = true },
   flamingoItalicUnderlinedUnderdotted      = { fg = "#f2cdcd", italic = true, underline = true, underdotted = true },
@@ -145,11 +148,11 @@ M.colors = {
   redBoldItalicUnderdotted                 = { fg = "#f38ba8", bold = true, italic = true, underdotted = true },
   redBoldItalicUnderlined                  = { fg = "#f38ba8", bold = true, italic = true, underline = true },
   redBoldItalicUnderlinedUnderdotted       = { fg = "#f38ba8", bold = true, italic = true, underline = true, underdotted = true },
-  maroon                                   = { fg = "#eba0ac" },
+  maroon                                   = { fg = "#eba0ac", bold = false, },
   maroonUnderdotted                        = { fg = "#eba0ac", underdotted = true },
   maroonUnderlined                         = { fg = "#eba0ac", underline = true },
   maroonUnderlinedUnderdotted              = { fg = "#eba0ac", underline = true, underdotted = true },
-  maroonItalic                             = { fg = "#eba0ac", italic = true },
+  maroonItalic                             = { fg = "#eba0ac", italic = true, bold = false, nocombine = true },
   maroonItalicUnderdotted                  = { fg = "#eba0ac", italic = true, underdotted = true },
   maroonItalicUnderlined                   = { fg = "#eba0ac", italic = true, underline = true },
   maroonItalicUnderlinedUnderdotted        = { fg = "#eba0ac", italic = true, underline = true, underdotted = true },
@@ -193,11 +196,11 @@ M.colors = {
   yellowBoldItalicUnderdotted              = { fg = "#f9e2af", bold = true, italic = true, underdotted = true },
   yellowBoldItalicUnderlined               = { fg = "#f9e2af", bold = true, italic = true, underline = true },
   yellowBoldItalicUnderlinedUnderdotted    = { fg = "#f9e2af", bold = true, italic = true, underline = true, underdotted = true },
-  green                                    = { fg = "#a6e3a1" },
+  green                                    = { fg = "#a6e3a1", bold = false },
   greenUnderdotted                         = { fg = "#a6e3a1", underdotted = true },
   greenUnderlined                          = { fg = "#a6e3a1", underline = true },
   greenUnderlinedUnderdotted               = { fg = "#a6e3a1", underline = true, underdotted = true },
-  greenItalic                              = { fg = "#a6e3a1", italic = true },
+  greenItalic                              = { fg = "#a6e3a1", italic = true, bold = false },
   greenItalicUnderdotted                   = { fg = "#a6e3a1", italic = true, underdotted = true },
   greenItalicUnderlined                    = { fg = "#a6e3a1", italic = true, underline = true },
   greenItalicUnderlinedUnderdotted         = { fg = "#a6e3a1", italic = true, underline = true, underdotted = true },

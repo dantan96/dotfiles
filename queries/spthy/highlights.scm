@@ -1,11 +1,22 @@
-;; Enhanced Tamarin Syntax Highlighting
-;; Using validated node types detected through syntax tree analysis
-;; Implementing many of the highlighting groups defined in tamarin-highlights.lua
-
 (single_comment) @spthycomment
 (multi_comment) @spthycomment
 
-(pub_name) @spthypublic.constant
+((pub_name) @spthypublic.constant
+(#has-parent? @spthypublic.constant tuple_term))
+
+((pub_name) @spthypublic.constant
+(#not-has-parent? @spthypublic.constant tuple_term))
+
+((ident) @spthyvariable.message
+ (#has-parent? @spthyvariable.message msg_var_or_nullary_fun))
+
+(fresh_var) @spthyvariable.fresh
+(pub_var) @spthyvariable.public
+(temporal_var) @spthyvariable.temporal
+
+(["<" "," ">" ] @spthytuple
+ (#has-parent? @spthytuple tuple_term))
+
 
 ;; Keywords - using direct token identification
 [
@@ -74,29 +85,28 @@
  "#include"
 ] @spthypreproc
 
-;((ident) @spthypreproc.identifier
-; (#has-parent? @spthypreproc 
+;;((ident) @spthypreproc.identifier
+;; (#has-parent? @spthypreproc 
 
-(tuple_term) @spthytuple
 
 ;; Identifiers - using the ident node type with text predicates for differentiation
 ;; Theory name
 ((ident) @spthytype
  (#has-parent? @spthytype theory))
 
-(function_untyped function_identifier: (ident)) @spthyfunction
+(function_pub function_identifier: (ident)) @spthyfunction
 
 ((ident) @spthyfunction
-(#has-parent? @spthyfunction function_untyped))
+(#has-parent? @spthyfunction function_pub))
 
-;; ((ident) @spthyfunction
-;;  (#has-parent? @spthyfunction function_private))
+((ident) @spthyfunction
+(#has-parent? @spthyfunction function_private))
 
 ((natural) @spthyfunction.arity
-(#has-parent? @spthyfunction.arity function_untyped))
+(#has-parent? @spthyfunction.arity function_pub))
 
-;; ((natural) @spthyfunction.arity
-;;  (#has-parent? @spthyfunction.arity function_private))
+((natural) @spthyfunction.arity
+(#has-parent? @spthyfunction.arity function_private))
 
 ;; Rule identifiers - using parent and position checking
 ((ident) @spthyfunction.rule
@@ -105,18 +115,19 @@
 ((ident) @spthyfunction.rule
  (#has-parent? @spthyfunction.rule lemma))
 
+
+((ident) @spthyfunction.rule
+ (#has-parent? @spthyfunction.rule diff_lemma))
+
+((ident) @spthyfunction.rule
+ (#has-parent? @spthyfunction.rule restriction))
+
 ((built_in) @spthyfunction.rule
  (#has-parent? @spthyfunction.rule built_ins))
 
 
 
 ;; Variable identifiers in terms
-((ident) @spthyvariable.message
- (#has-parent? @spthyvariable.message msg_var_or_nullary_fun))
-
-(fresh_var variable_identifier: (ident)) @spthyvariable.fresh
-(pub_var variable_identifier: (ident)) @spthyvariable.public
-(temporal_var variable_identifier: (ident)) @spthyvariable.temporal
 
 ;; Function identifiers for built-in facts
 ((ident) @spthyfact.builtin
@@ -195,27 +206,47 @@
 (simple_rule) @spthyrule.simple
 
 
-;; Special tokens
-["--[" "]->"] @spthyoperator
+;; Operators
+
+;; For rules
+["--[" "]->"] @spthyoperator.action
+["-->"] @spthyoperator.actionless
+
+;; For let blah = blah
 ["="] @spthyoperator.assignment
+
+;; For lemmas and proofs
 ["^"] @spthyoperator.exponentiation
 ["&" "|" "not" ] @spthyoperator.logical
 ["==>"] @spthyoperator.implies
-["[" "]" "<" ">" "(" ")"] @spthypunctuation.bracket
-["[" "]"] @spthypunctuation.square_bracket
-["<" ">"] @spthypunctuation.angle_bracket
-["(" ")"] @spthypunctuation.round_bracket
-["@"] @spthyoperator.at
-(["," ";" ":" "."] @spthypunctuation.delimiter
- (#not-has-ancestor? @spthypunctuation.delimiter tuple_term))
-(["," ":" ";"] @spthypunctuation.delimiter_sans_period 
- (#not-has-ancestor? @spthypunctuation.delimiter_sans_period tuple_term))
-["."] @spthypunctuation.delimiter.period
+
+(["<"] @spthyoperator.lessthan
+ (#has-parent? @spthyoperator.lessthan temp_var_order)
+ (#not-has-parent? @spthyoperator.lessthan tuple_term))
+
+;; Punctuation
+
+;; Brackets
+["[" "]"] @spthypunctuation.bracket.square
+["(" ")"] @spthypunctuation.bracket.round
+
+;; Delimiters
 ([","] @spthypunctuation.delimiter.comma
  (#not-has-ancestor? @spthypunctuation.delimiter.comma tuple_term))
+
+["."] @spthypunctuation.delimiter.period
 [";"] @spthypunctuation.delimiter.semicolon
 [":"] @spthypunctuation.delimiter.colon
-["-->"] @spthypunctuation.special
+
+;; Special
+["@"] @spthyoperator.at
+
+;(["," ";" ":" "."] @spthypunctuation.delimiter
+; (#not-has-ancestor? @spthypunctuation.delimiter tuple_term))
+;
+;(["," ":" ";"] @spthypunctuation.delimiter_sans_period 
+; (#not-has-ancestor? @spthypunctuation.delimiter_sans_period tuple_term))
+
 
 ;; Trace elements
 (trace_quantifier) @spthykeyword.quantifier
